@@ -403,10 +403,12 @@ class Cinema(Action):
 
 
 class Pet:
-    def __init__(self, W, H, scale=4, rng=None, random_level=1.0, lang='de', name='Mochi', poems=True):
+    def __init__(self, W, H, scale=4, rng=None, random_level=1.0, lang='de', name='Mochi', poems=True,
+                 species='cat'):
         self.W, self.H, self.s = W, H, scale
         self.rng = rng or random.Random()
         self.random_level, self.lang, self.name, self.poems = random_level, lang, name, poems
+        self.species = species if species in SPECIES else 'cat'
         self.x, self.y = W / 2, self.floor
         self.facing, self.frame = 1, 'idle'
         self.action, self.queue, self.particles = None, [], []
@@ -491,6 +493,8 @@ class Pet:
 
     def draw_self(self, out, frame=None):
         name = frame or self.frame
+        if self.species != 'cat':
+            name = '%s:%s' % (self.species, name)
         w, h = SIZES[name]
         out.append(('sprite', name, self.x + (16 - w) * self.s / 2, self.y + (16 - h) * self.s, self.facing < 0))
 
@@ -542,6 +546,7 @@ def make_action(spec, pet, user=''):
 
 
 THANKS = {'de': 'Danke', 'en': 'Thanks'}
+SPECIES = {'cat': 'Miau!', 'dog': 'Wuff!'}  # species -> its sound
 
 
 def handle_event(pet, engine, ev, force=False):

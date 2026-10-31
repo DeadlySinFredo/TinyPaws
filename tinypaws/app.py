@@ -211,6 +211,8 @@ class SettingsDialog(QDialog):
         self.name.setMaxLength(24)
         self.animal = QComboBox()
         self.animal.addItem('Katze / Cat', 'cat')
+        self.animal.addItem('Hund / Dog', 'dog')
+        self.animal.setCurrentIndex(max(0, self.animal.findData(cfg['animal'])))
         self.scale = QSpinBox(minimum=1, maximum=12, value=cfg['scale'])
         self.fps = QSpinBox(minimum=5, maximum=60, value=cfg['fps'])
         self.rand = QSpinBox(minimum=0, maximum=300, value=int(cfg['random_level'] * 100))
@@ -305,7 +307,7 @@ class TinyPaws:
         self.geo = scr.availableGeometry()  # stay above the panel/taskbar
         s = cfg['scale']
         self.pet = brain.Pet(self.geo.width(), self.geo.height(), scale=s, random_level=cfg['random_level'],
-                             lang=cfg['lang'], name=cfg['name'], poems=cfg['poems'])
+                             lang=cfg['lang'], name=cfg['name'], poems=cfg['poems'], species=cfg['animal'])
         if cfg['x'] is not None:
             self.pet.x = self.pet.clampx(cfg['x'])
         self.engine = ChatEngine.from_file()
@@ -351,7 +353,7 @@ class TinyPaws:
         m.addSeparator()
         m.addAction(self.t('quit'), self.quit)
         self.menu = m
-        self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap('idle')))
+        self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap('idle' if self.cfg['animal'] == 'cat' else self.cfg['animal'] + ':idle')))
         tip = 'TinyPaws – %s' % self.cfg['name']
         if self.cfg['twitch_channel']:
             tip += '\nTwitch: #%s' % self.cfg['twitch_channel']
@@ -427,7 +429,7 @@ class TinyPaws:
             B.handle_event(p, self.engine, {'type': k, 'user': p.rng.choice(DEMO_NAMES)})
             return
         make = {
-            'poke': lambda: B.Emote(('happy', 'jump'), 1.5, 4, bubble='Miau!', prio=U),
+            'poke': lambda: B.Emote(('happy', 'jump'), 1.5, 4, bubble=B.SPECIES[p.species], prio=U),
             'walk': lambda: B.Walk(p.rng.uniform(0, p.maxx), prio=U),
             'run': lambda: B.Walk(p.rng.uniform(0, p.maxx), speed=3.0, prio=U),
             'jump': lambda: B.Jump(prio=U),

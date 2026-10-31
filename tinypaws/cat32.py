@@ -95,7 +95,21 @@ def _head(g, hx, hy, eyes='open'):
     _px(g, [(int(hx) - 5, int(hy) + 3), (int(hx) + 6, int(hy) + 3)], 'P')  # blush
 
 
-def front(eyes='open', arms='down'):
+def _front_head_cat(g, eyes):
+    _tri(g, (7, 9), (8.5, 0.5), (13.5, 4.5), 'O')
+    _tri(g, (18.5, 4.5), (23.5, 0.5), (25, 9), 'O')
+    _tri(g, (8.8, 6.5), (9.3, 2.8), (12.2, 4.8), 'P')
+    _tri(g, (19.8, 4.8), (22.7, 2.8), (23.2, 6.5), 'P')
+    _ell(g, 16, 11, 9, 7.3, 'O')
+    _ell(g, 16, 14.8, 5.6, 3.6, 'L')
+    _px(g, [(15, 5), (16, 5), (15, 6), (16, 6), (15, 7), (16, 7)], 'L')  # tuxedo blaze
+    _eyes(g, [(10, 9), (19, 9)], eyes)
+    _px(g, [(15, 13), (16, 13)], 'P')
+    _px(g, [(14, 15), (15, 16), (16, 16), (17, 15)], 'K')
+    _px(g, [(9, 14), (10, 14), (21, 14), (22, 14)], 'P')
+
+
+def front(eyes='open', arms='down', sp='cat'):
     """Front-facing sitting chibi cat (idle pose); arms='up' = ABSOLUTE CINEMA."""
     g = _blank()
     _line(g, [(23, 29), (28.5, 27.5), (29, 20)], 1.6, 'O')
@@ -114,17 +128,7 @@ def front(eyes='open', arms='down'):
         _line(g, [(20, 21), (19, 27.5)], 1.5, 'O')
         _ell(g, 13.3, 28.6, 2, 1.4, 'L')
         _ell(g, 18.7, 28.6, 2, 1.4, 'L')
-    _tri(g, (7, 9), (8.5, 0.5), (13.5, 4.5), 'O')
-    _tri(g, (18.5, 4.5), (23.5, 0.5), (25, 9), 'O')
-    _tri(g, (8.8, 6.5), (9.3, 2.8), (12.2, 4.8), 'P')
-    _tri(g, (19.8, 4.8), (22.7, 2.8), (23.2, 6.5), 'P')
-    _ell(g, 16, 11, 9, 7.3, 'O')
-    _ell(g, 16, 14.8, 5.6, 3.6, 'L')
-    _px(g, [(15, 5), (16, 5), (15, 6), (16, 6), (15, 7), (16, 7)], 'L')  # tuxedo blaze
-    _eyes(g, [(10, 9), (19, 9)], eyes)
-    _px(g, [(15, 13), (16, 13)], 'P')
-    _px(g, [(14, 15), (15, 16), (16, 16), (17, 15)], 'K')
-    _px(g, [(9, 14), (10, 14), (21, 14), (22, 14)], 'P')
+    HEADS[sp][1](g, eyes)
     return _finish(g)
 
 
@@ -141,7 +145,7 @@ LEGS = {  # far back, far front, near back, near front: (top_x, bottom_x)
 }
 
 
-def _standing(legs='stand', eyes='open', shift=0, tail=True):
+def _standing(legs='stand', eyes='open', shift=0, tail=True, sp='cat'):
     g = _blank(W + shift, W)
     o = shift / 2
     fb, ff, nb, nf = LEGS[legs]
@@ -157,15 +161,15 @@ def _standing(legs='stand', eyes='open', shift=0, tail=True):
         _px(g, [(int(x + o), 15), (int(x + o), 16), (int(x + o) + 1, 16)], 'D')
     for (a, b) in (nb, nf):
         _leg(g, (a + o, 23), (b + o, 28.8), 'O')
-    _head(g, 22 + o, 11.5, eyes)
+    HEADS[sp][0](g, 22 + o, 11.5, eyes)
     return g
 
 
-def stand(legs='stand', eyes='open'):
-    return _finish(_standing(legs, eyes))
+def stand(legs='stand', eyes='open', sp='cat'):
+    return _finish(_standing(legs, eyes, sp=sp))
 
 
-def sit(eyes='open'):
+def sit(eyes='open', sp='cat'):
     g = _blank()
     _line(g, [(10, 29.5), (4, 29), (2.5, 25)], 1.5, 'O')
     _ell(g, 14, 22, 7, 7.5, 'O')
@@ -174,11 +178,11 @@ def sit(eyes='open'):
     _leg(g, (18, 22), (18, 29), 'D')
     _leg(g, (21, 22), (21, 29), 'O')
     _ell(g, 9, 29.3, 2.4, 1.3, 'L')
-    _head(g, 20, 11.5, eyes)
+    HEADS[sp][0](g, 20, 11.5, eyes)
     return _finish(g)
 
 
-def jump(eyes='open'):
+def jump(eyes='open', sp='cat'):
     g = _blank()
     _line(g, [(6, 16), (2.5, 12), (2, 7)], 1.6, 'O')
     _leg(g, (9, 19), (4, 25), 'D')
@@ -187,39 +191,79 @@ def jump(eyes='open'):
     _ell(g, 21, 18.5, 3.5, 2.8, 'L')
     _leg(g, (11, 20), (6, 27), 'O')
     _leg(g, (22, 20), (28, 26.5), 'O')
-    _head(g, 23, 11.5, eyes)
+    HEADS[sp][0](g, 23, 11.5, eyes)
     return _finish(g)
 
 
-def sleep():
+def sleep(sp='cat'):
     g = _blank()
     _ell(g, 15, 25.5, 11, 5.2, 'O')
     for x in (8, 11, 14):
         _px(g, [(x, 21), (x, 22), (x + 1, 22)], 'D')
-    _head(g, 23, 24.5, 'closed')
+    HEADS[sp][0](g, 23, 24.5, 'closed')
     _line(g, [(4, 28), (8, 30.3), (17, 30.3)], 1.3, 'D')
     return _finish(g)
 
 
-def flex():
-    g = _standing(shift=8, tail=True)
+def flex(sp='cat'):
+    g = _standing(shift=8, tail=True, sp=sp)
     _line(g, [(15, 17), (8, 17), (8, 10)], 1.7, 'D')  # back arm (behind body would be hidden; keep visible)
     _ell(g, 10.5, 15.5, 2.4, 2, 'D')
     _ell(g, 8, 9, 2.1, 2.1, 'L')
     _line(g, [(27, 19), (34, 19), (34, 12)], 1.8, 'O')
     _ell(g, 31, 17.2, 2.8, 2.2, 'O')  # bicep
     _ell(g, 34, 10.5, 2.2, 2.2, 'L')
-    for x in range(20, 33):  # sunglasses
-        _px(g, [(x, 9)], 'N')
-    for x in (20, 21, 22, 23, 28, 29, 30, 31):
-        _px(g, [(x, 10), (x, 11), (x, 12)], 'N')
-    _px(g, [(21, 10), (29, 10)], 'S')
+    l, r = (21, 29) if sp == 'cat' else (25, 30)  # eye x positions of the side head at hx=26
+    for x in range(l - 1, r + 3):  # sunglasses
+        _px(g, [(x, 9 if sp == 'cat' else 8)], 'N')
+    for x in (l - 1, l, l + 1, l + 2, r, r + 1, r + 2):
+        _px(g, [(x, y) for y in ((10, 11, 12) if sp == 'cat' else (9, 10, 11))], 'N')
+    _px(g, [(l, 10 if sp == 'cat' else 9), (r + 1, 10 if sp == 'cat' else 9)], 'S')
     return _finish(g)
 
 
-FRAMES = {
-    'idle': front(), 'blink': front('closed'), 'happy': front('closed'),
-    'walk1': stand('walk1'), 'walk2': stand('walk2'), 'jump': jump(),
-    'sit': sit(), 'surprised': front('wide'), 'stretch': jump('closed'),
-    'sleep': sleep(), 'flex': flex(), 'cinema': front(arms='up'),
-}
+def _head_dog(g, hx, hy, eyes='open'):
+    """Puppy 3/4 head facing right: floppy ear, long snout, big nose."""
+    _ell(g, hx, hy, 7.5, 6.5, 'O')
+    _ell(g, hx + 4.5, hy + 2.6, 4.2, 2.9, 'L')
+    _px(g, [(int(hx) + 1, int(hy) - 5), (int(hx) + 1, int(hy) - 4), (int(hx) + 2, int(hy) - 3)], 'L')
+    _ell(g, hx - 3.5, hy + 0.5, 2.7, 5.2, 'M')  # floppy ear
+    _eyes(g, [(int(hx) - 1, int(hy) - 3), (int(hx) + 4, int(hy) - 3)], eyes)
+    _ell(g, hx + 7.7, hy + 1.3, 1.6, 1.3, 'E')
+    _px(g, [(int(hx) + 7, int(hy) + 0)], 'W')
+    _px(g, [(int(hx) + 4, int(hy) + 4), (int(hx) + 5, int(hy) + 4), (int(hx) + 6, int(hy) + 4)], 'K')
+    if eyes == 'closed':
+        _px(g, [(int(hx) + 5, int(hy) + 5), (int(hx) + 6, int(hy) + 5), (int(hx) + 5, int(hy) + 6)], 'P')  # tongue
+
+
+def _front_head_dog(g, eyes):
+    _ell(g, 8, 11.5, 3, 6, 'M')
+    _ell(g, 24, 11.5, 3, 6, 'M')
+    _ell(g, 16, 10.5, 7.5, 6.8, 'O')
+    _ell(g, 16, 15, 5.2, 3.6, 'L')
+    _px(g, [(15, 5), (16, 5), (15, 6), (16, 6), (15, 7), (16, 7), (15, 8), (16, 8)], 'L')
+    _eyes(g, [(10, 9), (19, 9)], eyes)
+    _ell(g, 16, 13.4, 2, 1.3, 'E')
+    _px(g, [(15, 13)], 'W')
+    _px(g, [(14, 16), (15, 16), (16, 16), (17, 16)], 'K')
+    if eyes == 'closed':
+        _px(g, [(15, 17), (16, 17), (15, 18), (16, 18)], 'P')  # tongue out = happy
+
+
+HEADS = {'cat': (_head, _front_head_cat), 'dog': (_head_dog, _front_head_dog)}
+_DOG = str.maketrans('ODHL', 'Aahc')  # recolor cat fur chars to dog palette
+
+
+def frames(sp='cat'):
+    f = {
+        'idle': front(sp=sp), 'blink': front('closed', sp=sp), 'happy': front('closed', sp=sp),
+        'walk1': stand('walk1', sp=sp), 'walk2': stand('walk2', sp=sp), 'jump': jump(sp=sp),
+        'sit': sit(sp=sp), 'surprised': front('wide', sp=sp), 'stretch': jump('closed', sp=sp),
+        'sleep': sleep(sp=sp), 'flex': flex(sp=sp), 'cinema': front(arms='up', sp=sp),
+    }
+    if sp == 'dog':
+        f = {'dog:' + k: [r.translate(_DOG) for r in v] for k, v in f.items()}
+    return f
+
+
+FRAMES = {**frames('cat'), **frames('dog')}

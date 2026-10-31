@@ -27,6 +27,21 @@ class Sprites(unittest.TestCase):
             self.assertTrue(set(''.join(rows)) <= set(PALETTE) | {'.'}, name)
 
 
+class Species(unittest.TestCase):
+    def test_dog_uses_dog_sprites_in_all_scenes(self):
+        for a in (brain.HypeTrain(2), brain.GigaChad(), brain.Cinema(), brain.Sleep(2)):
+            p = brain.Pet(W, H, scale=S, rng=random.Random(1), species='dog')
+            p.play(a)
+            for _ in range(30 * 30):
+                p.update(1 / 30)
+                for it in p.render():
+                    if it[0] == 'sprite' and it[1] in SIZES and not it[1].startswith('dog:'):
+                        self.assertNotIn(it[1], ('idle', 'walk1', 'sit', 'flex', 'cinema', 'sleep'))
+
+    def test_unknown_species_falls_back(self):
+        self.assertEqual(brain.Pet(W, H, species='kraken').species, 'cat')
+
+
 class Movement(unittest.TestCase):
     def test_walk_reaches_target(self):
         p = pet()

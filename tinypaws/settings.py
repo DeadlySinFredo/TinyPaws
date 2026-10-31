@@ -30,6 +30,7 @@ def load(path=None):
             cfg[k] = DEFAULTS[k]
     cfg['name'] = str(cfg['name'])[:24] or DEFAULTS['name']
     cfg['twitch_channel'] = str(cfg['twitch_channel']).strip().lstrip('#').lower()[:25]
+    cfg['animal'] = cfg['animal'] if cfg['animal'] in ('cat', 'dog') else 'cat'
     cfg['lang'] = cfg['lang'] if cfg['lang'] in ('de', 'en') else 'de'
     if cfg['x'] is not None and not isinstance(cfg['x'], (int, float)):
         cfg['x'] = None
