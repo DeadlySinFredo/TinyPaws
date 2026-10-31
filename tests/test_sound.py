@@ -18,7 +18,7 @@ from tinypaws import app as A, brain, settings, sound  # noqa: E402
 
 class Synth(unittest.TestCase):
     def test_every_sound_is_a_short_quiet_wav(self):
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
             for name in sound.SOUNDS:
                 p = Path(d) / (name + '.wav')
                 dur = sound.render(name, p)
@@ -30,7 +30,7 @@ class Synth(unittest.TestCase):
                 self.assertTrue(8000 < peak <= 16384, (name, peak))  # normalised to -6 dB, never clipping
 
     def test_player_cooldown_and_volume(self):
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
             p = sound.Player(Path(d), volume=40)
             self.assertTrue(p.play('pop', now=10.0))
             self.assertFalse(p.play('pop', now=10.1))     # flood protection
@@ -74,7 +74,7 @@ class Events(unittest.TestCase):
 
 class AppSwitch(unittest.TestCase):
     def test_off_by_default_and_live_toggle(self):
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
             env = os.environ.get('XDG_CONFIG_HOME')
             os.environ.update(XDG_CONFIG_HOME=d, XDG_CURRENT_DESKTOP='none')
             try:
