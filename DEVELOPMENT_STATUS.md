@@ -34,12 +34,19 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 | Arch/CachyOS-PKGBUILD | lokal gebaut |
 | Windows-/macOS-Pakete auf echter Hardware | **offen** (Overlay, Klickdurchlass, Tray, Autostart, DPI) |
 
-## Messwerte (KDE, 3440×1440, Skalierung 6)
-~2 % CPU (eines Kerns) im Leerlauf bei 30 Bilder/s, 8 Bilder/s im Schlaf; ~136 MB RAM.
-Bewegung mit 60 Bilder/s noch nicht gemessen (#3 Performance).
+## Messwerte (KDE, 3440×1440, Skalierung 6, `scripts/measure_perf.py`)
+Nur geänderte Bildbereiche werden neu gezeichnet (vorher jedes Mal das ganze bildschirmgroße Overlay):
+
+| Zustand | CPU (1 Kern) vorher → nachher | neu gezeichnete Fläche je Bild | Bilder/s |
+|---|---|---|---|
+| Leerlauf | 0,1 % → 0,1 % | 4,8 Mio. → ~16 000 px | ~1 |
+| Schlaf | 0,8 % → 0,3 % | 4,8 Mio. → ~16 000 px | 8 |
+| Laufen | 4,7 % → 1,6 % | 4,8 Mio. → ~16 000 px | 60 |
+
+RAM ~144 MB (RSS, HD-Tier geladen). Last des Compositors sinkt zusätzlich (nicht separat gemessen).
 
 ## Tests
-`python3 -m unittest discover -s tests -t .` – 58 Tests: Bewegung, Prioritäten, alle Szenen/Memes × alle
+`python3 -m unittest discover -s tests -t .` – 61 Tests (inkl. pixelgenauer Vergleich Teil- vs. Voll-Neuzeichnen über alle Szenen): Bewegung, Prioritäten, alle Szenen/Memes × alle
 Tierarten, Klettern, HD-Sprites (Bildzahl, Zyklusdauer, Szenen), Tierpakete, Chat, Twitch-Parser,
 EventSub-Mapping, OBS (inkl. Tierwechsel/Reconnect), Live-Einstellungen, Settings-Validierung.
 

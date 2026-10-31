@@ -101,8 +101,8 @@ def _platform_setup():
         os.environ['QT_QPA_PLATFORM'] = 'xcb'
 
 
-from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, QUrl  # noqa: E402
-from PySide6.QtGui import (QColor, QCursor, QDesktopServices, QFont, QFontMetricsF, QGuiApplication, QIcon, QImage,  # noqa: E402
+from PySide6.QtCore import QPointF, QRect, QRectF, Qt, QTimer, QUrl  # noqa: E402
+from PySide6.QtGui import (QColor, QCursor, QDesktopServices, QRegion, QFont, QFontMetricsF, QGuiApplication, QIcon, QImage,  # noqa: E402
                            QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QPolygonF, QTransform)
 from PySide6.QtNetwork import QLocalServer, QLocalSocket  # noqa: E402
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,  # noqa: E402
@@ -132,6 +132,38 @@ class Renderer:
                 pm = pm.transformed(QTransform().scale(-1, 1))
             self.cache[(name, flip)] = pm
         return pm
+
+    def bounds(self, items, width):
+        """Screen rects covered by draw items (generous margins), so only those get repainted."""
+        out = []
+        for it in items:
+            k = it[0]
+            if k == 'sprite':
+                pm = self.pixmap(it[1], it[4])
+                w, h = pm.width(), pm.height()
+                if len(it) > 5 and it[5]:  # rotated around its centre
+                    d = max(w, h)
+                    out.append(QRect(int(it[2] + w / 2 - d / 2), int(it[3] + h / 2 - d / 2), d, d))
+                else:
+                    out.append(QRect(int(it[2]), int(it[3]), w + 1, h + 1))
+            elif k == 'rect':
+                out.append(QRect(int(it[1]), int(it[2]), int(it[3]) + 1, int(it[4]) + 1))
+            elif k == 'text':
+                fm = QFontMetricsF(self._font(it[4]))
+                w = fm.horizontalAdvance(it[1]) + it[4]
+                out.append(QRect(int(it[2] - w / 2), int(it[3] - fm.ascent() - it[4] / 4), int(w), int(fm.height() + it[4] / 2)))
+            elif k == 'bubble':
+                fm = QFontMetricsF(self._font(10 + self.s * 1.5))
+                w, h = fm.horizontalAdvance(it[1]) + 16, fm.height() + 10
+                x = max(4.0, min(width - w - 4, it[2] - w / 2))
+                y = max(4.0, it[3] - h - 6)
+                out.append(QRect(int(x), int(y), int(w), int(h + 8)))
+            elif k == 'rays':
+                r = it[5]
+                out.append(QRect(int(it[1] - r), int(it[2] - r), int(2 * r), int(2 * r)))
+            elif k == 'spot':
+                out.append(QRect(int(it[1] - it[5]), int(it[2]), int(2 * it[5]), int(it[3] - it[2])))
+        return [r.adjusted(-3, -3, 3, 3) for r in out]
 
     def paint(self, p, items, width):
         for it in items:
@@ -536,6 +568,7 @@ class TinyPaws:
         if cfg['interact']:
             self.handle.show()
         self.drag_off, self.items, self.hpos, self.cursor_t, self.raise_t = None, None, None, 0.0, 0.0
+        self.full_repaint = True
         self.panel, self.obs, self.home, self.obs_error = None, None, None, ''
         if cfg['obs']:
             self._start_obs()
@@ -628,8 +661,16 @@ class TinyPaws:
         pet.update(dt)
         items = pet.render()
         if items != self.items:
+            # repaint only where something was or is now drawn (full overlay = whole screen)
+            dirty = QRegion()
+            for r in self.renderer.bounds(self.items or [], self.geo.width()) + self.renderer.bounds(items, self.geo.width()):
+                dirty += r
             self.items = self.overlay.items = items
-            self.overlay.update()
+            if self.full_repaint:
+                self.overlay.update()
+                self.full_repaint = False
+            else:
+                self.overlay.update(dirty)
             if self.obs:
                 self.obs.publish(self.geo.width(), self.geo.height(), self.cfg['scale'], items)
         hp = (self.geo.x() + int(pet.x), self.geo.y() + int(pet.y))
@@ -944,6 +985,7 @@ class TinyPaws:
         self.renderer = Renderer(s)
         self.handle.resize(16 * s, 16 * s)
         self.items = self.hpos = None
+        self.full_repaint = True
 
     def status_lines(self):
         """Human-readable state for the start window."""
