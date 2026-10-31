@@ -1,17 +1,24 @@
-"""High-detail 32x32 cat frames, drawn procedurally (ellipses/lines) then shaded + outlined.
+"""High-detail pet frames, drawn procedurally (ellipses/lines) then shaded + outlined.
 
-Rendered at density 2: on screen the cat keeps its 16-unit size, with twice the detail.
+Shapes are designed on a 32-unit grid and rasterised K times finer (48x48 px),
+rendered at density 3: the pet keeps its 16-unit layout size with 3x the detail.
 """
 import math
 
-W = 32
+W = 32   # design grid
+K = 1.5  # raster pixels per design unit
+DENSITY = 3
 
 
 def _blank(w=W, h=W):
-    return [['.'] * w for _ in range(h)]
+    return [['.'] * int(w * K) for _ in range(int(h * K))]
 
 
 def _ell(g, cx, cy, rx, ry, c):
+    _ell_px(g, cx * K, cy * K, rx * K, ry * K, c)
+
+
+def _ell_px(g, cx, cy, rx, ry, c):
     for y in range(max(0, int(cy - ry - 1)), min(len(g), int(cy + ry + 2))):
         for x in range(max(0, int(cx - rx - 1)), min(len(g[0]), int(cx + rx + 2))):
             if ((x + .5 - cx) / rx) ** 2 + ((y + .5 - cy) / ry) ** 2 <= 1:
@@ -20,13 +27,14 @@ def _ell(g, cx, cy, rx, ry, c):
 
 def _line(g, pts, r, c):
     for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
-        n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
+        n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2 * K) + 1
         for i in range(n + 1):
             t = i / n
-            _ell(g, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r, r, c)
+            _ell_px(g, (x0 + (x1 - x0) * t) * K, (y0 + (y1 - y0) * t) * K, r * K, r * K, c)
 
 
 def _tri(g, a, b, c, col):
+    a, b, c = [(p[0] * K, p[1] * K) for p in (a, b, c)]
     xs, ys = (a[0], b[0], c[0]), (a[1], b[1], c[1])
     for y in range(max(0, int(min(ys))), min(len(g), int(max(ys)) + 1)):
         for x in range(max(0, int(min(xs))), min(len(g[0]), int(max(xs)) + 1)):
@@ -39,8 +47,21 @@ def _tri(g, a, b, c, col):
 
 
 def _px(g, pts, c):
+    """Fill design-grid cells (each covers ~K x K raster pixels)."""
     for x, y in pts:
-        if 0 <= y < len(g) and 0 <= x < len(g[0]):
+        for yy in range(int(y * K), int((y + 1) * K)):
+            for xx in range(int(x * K), int((x + 1) * K)):
+                if 0 <= yy < len(g) and 0 <= xx < len(g[0]):
+                    g[yy][xx] = c
+
+
+def _thin(g, p0, p1, c):
+    """1-raster-pixel line (whiskers)."""
+    (x0, y0), (x1, y1) = (p0[0] * K, p0[1] * K), (p1[0] * K, p1[1] * K)
+    n = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
+    for i in range(n + 1):
+        x, y = int(x0 + (x1 - x0) * i / n), int(y0 + (y1 - y0) * i / n)
+        if 0 <= y < len(g) and 0 <= x < len(g[0]) and g[y][x] != '.':
             g[y][x] = c
 
 
@@ -65,19 +86,20 @@ def _finish(g):
 
 
 def _eyes(g, pts, mode):
-    """Big chibi eyes, 3x4 px, top-left at each point."""
+    """Big chibi eyes (~3x4 design units, top-left at each point), round with catchlights."""
     for x, y in pts:
+        cx, cy = x + 1.5, y + 2
         if mode == 'closed':
-            _px(g, [(x, y + 2), (x + 1, y + 1), (x + 2, y + 2)], 'S')
+            _line(g, [(cx - 1.4, cy + 0.3), (cx, cy - 0.6), (cx + 1.4, cy + 0.3)], 0.35, 'S')
         elif mode == 'wide':
-            for j in range(5):
-                _px(g, [(x - 1 + i, y - 1 + j) for i in range(4)], 'W')
-            _px(g, [(x, y + 1), (x + 1, y + 1), (x, y + 2), (x + 1, y + 2)], 'E')
+            _ell(g, cx, cy, 2.1, 2.5, 'W')
+            _ell(g, cx, cy + 0.2, 0.9, 1.1, 'E')
         else:
-            for j in range(4):
-                _px(g, [(x + i, y + j) for i in range(3)], 'E')
-            _px(g, [(x, y), (x + 1, y), (x, y + 1)], 'W')  # big catchlight
-            _px(g, [(x + 2, y + 3)], 'W')
+            _ell(g, cx, cy, 1.6, 2.1, 'E')
+            _ell(g, cx, cy + 0.9, 1.1, 0.9, 'g')
+            _ell(g, cx, cy + 0.2, 0.8, 1.2, 'E')
+            _ell(g, cx - 0.6, cy - 0.9, 0.7, 0.7, 'W')  # catchlight
+            _ell(g, cx + 0.8, cy + 1.2, 0.35, 0.35, 'W')
 
 
 def _head(g, hx, hy, eyes='open'):
@@ -93,6 +115,8 @@ def _head(g, hx, hy, eyes='open'):
     _px(g, [(int(hx) + 1, int(hy) + 2), (int(hx) + 2, int(hy) + 2)], 'P')
     _px(g, [(int(hx), int(hy) + 4), (int(hx) + 1, int(hy) + 4), (int(hx) + 3, int(hy) + 4)], 'K')
     _px(g, [(int(hx) - 5, int(hy) + 3), (int(hx) + 6, int(hy) + 3)], 'P')  # blush
+    for dy in (-0.6, 0.6):
+        _thin(g, (hx + 3, hy + 3), (hx + 7.8, hy + 2.6 + dy * 2), 'S')
 
 
 def _front_head_cat(g, eyes):
@@ -107,6 +131,9 @@ def _front_head_cat(g, eyes):
     _px(g, [(15, 13), (16, 13)], 'P')
     _px(g, [(14, 15), (15, 16), (16, 16), (17, 15)], 'K')
     _px(g, [(9, 14), (10, 14), (21, 14), (22, 14)], 'P')
+    for dy in (-0.8, 0.8):
+        _thin(g, (12.5, 15), (7.6, 14.6 + dy), 'S')
+        _thin(g, (19.5, 15), (24.4, 14.6 + dy), 'S')
 
 
 def front(eyes='open', arms='down', sp='cat'):
@@ -138,35 +165,72 @@ def _leg(g, top, bottom, c, paw=True):
         _ell(g, bottom[0] + .6, bottom[1] + .3, 2, 1.3, 'L')
 
 
-LEGS = {  # far back, far front, near back, near front: (top_x, bottom_x)
-    'stand': ((9, 9), (19, 19), (12, 12), (22, 22)),
-    'walk1': ((9, 11), (19, 16), (12, 9), (22, 25)),
-    'walk2': ((9, 6), (19, 22), (12, 14), (22, 19)),
+# style: (frames, stride px, paw lift px, body drop px, leg phases: far hind, far front, near hind, near front)
+GAITS = {
+    'stand': (1, 0, 0, 0, (0, 0, 0, 0)),
+    'walk': (8, 7, 2.6, 0, (0.5, 0.75, 0.0, 0.25)),   # lateral-sequence walk
+    'run': (6, 10, 4.0, 0, (0.08, 0.6, 0.0, 0.5)),     # gallop: hinds then fronts
+    'sneak': (8, 4, 1.6, 3, (0.5, 0.75, 0.0, 0.25)),  # crouched stalk
 }
+SWING = 0.4  # part of the cycle a paw is in the air
 
 
-def _standing(legs='stand', eyes='open', shift=0, tail=True, sp='cat'):
+def _foot(phase, stride, lift):
+    """Paw offset along the cycle: in the air it arcs forward, on the ground it slides back."""
+    if phase < SWING:
+        u = phase / SWING
+        return -stride / 2 + stride * u, math.sin(math.pi * u) * lift
+    u = (phase - SWING) / (1 - SWING)
+    return stride / 2 - stride * u, 0.0
+
+
+def _jleg(g, hip, foot, up, front, c, crouch=0.0):
+    """Two-segment leg: front knees fold back under a lifted paw, hind hocks point back."""
+    mx, my = (hip[0] + foot[0]) / 2, (hip[1] + foot[1]) / 2
+    knee = (mx + (-1 if front else -1.6) * (0.4 + up * 0.5 + crouch), my - up * 0.3)
+    if c == 'O':  # near legs get their own outline so they read against the body
+        _line(g, [(hip[0], hip[1] + 2.5), knee, foot], 2.25, 'K')
+    _line(g, [hip, knee, foot], 1.45, c)
+    _ell(g, foot[0] + .7, foot[1] + .2, 2, 1.25, 'L' if c == 'O' else 'D')
+
+
+def _standing(style='stand', i=0, eyes='open', shift=0, tail=True, sp='cat'):
     g = _blank(W + shift, W)
     o = shift / 2
-    fb, ff, nb, nf = LEGS[legs]
+    n, stride, lift, drop, phases = GAITS[style]
+    t = i / n
+    bob = -0.7 * abs(math.sin(2 * math.pi * t)) if style == 'walk' else 0.0
+    if style == 'run':
+        bob = -1.2 * math.sin(2 * math.pi * t)
+    by = 20 + drop + bob
     if tail:
-        wag = {'walk1': 1, 'walk2': -1}.get(legs, 0)
-        _line(g, [(6 + o, 19), (3 + o, 13), (4 + o + wag, 6)], 1.6, 'O')
-        _ell(g, 4 + o + wag, 5.5, 1.6, 1.6, 'D')
-    for (a, b) in (fb, ff):
-        _leg(g, (a + o, 22), (b + o, 28.8), 'D')
-    _ell(g, 14 + o, 22, 8.5, 5, 'O')
-    _ell(g, 19 + o, 23, 3.4, 3, 'L')
-    for x in (9, 12, 15):
-        _px(g, [(int(x + o), 15), (int(x + o), 16), (int(x + o) + 1, 16)], 'D')
-    for (a, b) in (nb, nf):
-        _leg(g, (a + o, 23), (b + o, 28.8), 'O')
-    HEADS[sp][0](g, 22 + o, 11.5, eyes)
+        if style == 'run':
+            pts = [(6 + o, by - 2), (2.5 + o, by - 4.5), (1.5 + o, by - 8 + math.sin(2 * math.pi * t))]
+        elif style == 'sneak':
+            pts = [(6 + o, by - 1), (2.5 + o, by + 1), (1.8 + o, by - 2 + math.sin(2 * math.pi * t))]
+        else:
+            sway = 1.4 * math.sin(2 * math.pi * t)
+            pts = [(6 + o, by - 3), (3 + o, by - 9), (4 + o + sway, by - 16)]
+        _line(g, pts, 1.6, 'O')
+        _ell(g, pts[-1][0], pts[-1][1], 1.6, 1.6, 'D')
+    hips = ((8.5, by), (18.5, by), (11.5, by + 1), (20.5, by + 1))  # far hind, far front, near hind, near front
+    for k in (0, 1, 2, 3):
+        dx, up = _foot((t + phases[k]) % 1.0, stride, lift)
+        hx, hy = hips[k]
+        c = 'D' if k < 2 else 'O'
+        _jleg(g, (hx + o, hy), (hx + o + dx, 28.8 - up), up, k % 2 == 1, c, drop * 0.6)
+        if k == 1:  # body between far and near legs
+            _ell(g, 14 + o, by, 8.5 + (0.8 * math.cos(2 * math.pi * t) if style == 'run' else 0), 4.6, 'O')
+            _ell(g, 19 + o, by + 1, 3.4, 3, 'L')
+            for x in (9, 12, 15):
+                _px(g, [(int(x + o), int(by - 4)), (int(x + o), int(by - 3)), (int(x + o) + 1, int(by - 3))], 'D')
+    hy = 10.5 + drop * 1.1 + bob * 0.6
+    HEADS[sp][0](g, 22 + o + (1 if style == 'sneak' else 0), hy, eyes)
     return g
 
 
-def stand(legs='stand', eyes='open', sp='cat'):
-    return _finish(_standing(legs, eyes, sp=sp))
+def stand(style='stand', i=0, eyes='open', sp='cat'):
+    return _finish(_standing(style, i, eyes, sp=sp))
 
 
 def sit(eyes='open', sp='cat'):
@@ -257,13 +321,60 @@ _DOG = str.maketrans('ODHL', 'Aahc')  # recolor cat fur chars to dog palette
 def frames(sp='cat'):
     f = {
         'idle': front(sp=sp), 'blink': front('closed', sp=sp), 'happy': front('closed', sp=sp),
-        'walk1': stand('walk1', sp=sp), 'walk2': stand('walk2', sp=sp), 'jump': jump(sp=sp),
+        'jump': jump(sp=sp),
         'sit': sit(sp=sp), 'surprised': front('wide', sp=sp), 'stretch': jump('closed', sp=sp),
         'sleep': sleep(sp=sp), 'flex': flex(sp=sp), 'cinema': front(arms='up', sp=sp),
     }
+    for style in ('walk', 'run', 'sneak'):
+        for i in range(GAITS[style][0]):
+            f['%s%d' % (style, i)] = stand(style, i, sp=sp)
+    f['walk2'] = f['walk4']  # walk1/walk2: legacy two-frame names used by emotes and reactions.json
     if sp == 'dog':
         f = {'dog:' + k: [r.translate(_DOG) for r in v] for k, v in f.items()}
     return f
 
 
-FRAMES = {**frames('cat'), **frames('dog')}
+# breed -> colors for the species' fur chars; first breed per species = base look (no prefix needed)
+BREEDS = {
+    'cat': {
+        'tuxedo': ('Tuxedo (schwarz-weiß)', None),
+        'orange': ('Rote Tigerkatze', ('#e8913a', '#b5611c', '#f7b567', '#fff1dc')),
+        'gray': ('Graue Kurzhaar', ('#8b909e', '#626674', '#acb1bd', '#eef0f4')),
+        'white': ('Weiße Katze', ('#f1eee8', '#cfc8bd', '#ffffff', '#fde4ea')),
+        'black': ('Schwarze Katze', ('#25222c', '#16141b', '#3a3644', '#2e2b36')),
+        'cream': ('Creme / Siam-Look', ('#efe0c4', '#c7ab80', '#fff3dc', '#fff9ee')),
+    },
+    'dog': {
+        'beagle': ('Beagle', None),
+        'golden': ('Golden Retriever', ('#e3a857', '#b77b30', '#f3c982', '#fbe8c3', '#cc8d3d')),
+        'husky': ('Husky', ('#6f7683', '#4b515c', '#929aa6', '#f4f6f8', '#4b515c')),
+        'corgi': ('Corgi', ('#e48a3a', '#b8652a', '#f3ad69', '#fdf6ec', '#c96f2b')),
+        'black': ('Schwarzer Labrador', ('#2b2724', '#1b1816', '#433c37', '#3a342f', '#1b1816')),
+        'white': ('Weißer Hund', ('#f4f2ee', '#cfcac2', '#ffffff', '#ffffff', '#2b2724')),
+    },
+}
+_FUR = {'cat': 'ODHL', 'dog': 'AahcM'}  # chars each breed palette replaces
+
+
+def skin(species, breed):
+    """Sprite-name prefix for a species/breed ('' = base cat)."""
+    base = next(iter(BREEDS[species]))
+    if breed == base or breed not in BREEDS[species]:
+        return '' if species == 'cat' else species + ':'
+    return '%s/%s:' % (species, breed)
+
+
+FRAMES, EXTRA_PALETTE = {}, {}
+_next = 0x100  # breed colors get private chars above Latin-1 so they never clash with base palette chars
+for _sp, _breeds in BREEDS.items():
+    _base = frames(_sp)
+    FRAMES.update(_base)
+    for _br, (_label, _cols) in _breeds.items():
+        if not _cols:
+            continue
+        _chars = ''.join(chr(_next + i) for i in range(len(_cols)))
+        EXTRA_PALETTE.update(zip(_chars, _cols))
+        _next += len(_cols)
+        _tr = str.maketrans(_FUR[_sp], _chars)
+        for _k, _v in _base.items():
+            FRAMES[skin(_sp, _br) + _k.split(':')[-1]] = [r.translate(_tr) for r in _v]

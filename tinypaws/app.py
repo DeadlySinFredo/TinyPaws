@@ -14,7 +14,7 @@ from . import brain, settings
 from .obs import ObsServer
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
-from .sprites import DENSITY, PALETTE, SPRITES
+from .sprites import BREEDS, DENSITY, PALETTE, SPRITES, skin
 
 TR = {
     'de': dict(panel='Testpanel', settings='Einstellungen', interact='Interaktion (Ziehen)', quit='Beenden',
@@ -210,9 +210,10 @@ class SettingsDialog(QDialog):
         self.name = QLineEdit(cfg['name'])
         self.name.setMaxLength(24)
         self.animal = QComboBox()
-        self.animal.addItem('Katze / Cat', 'cat')
-        self.animal.addItem('Hund / Dog', 'dog')
-        self.animal.setCurrentIndex(max(0, self.animal.findData(cfg['animal'])))
+        for sp, label in (('cat', 'Katze'), ('dog', 'Hund')):
+            for br, (name, _) in BREEDS[sp].items():
+                self.animal.addItem('%s – %s' % (label, name), '%s/%s' % (sp, br))
+        self.animal.setCurrentIndex(max(0, self.animal.findData('%s/%s' % (cfg['animal'], cfg['breed']))))
         self.scale = QSpinBox(minimum=1, maximum=12, value=cfg['scale'])
         self.fps = QSpinBox(minimum=5, maximum=60, value=cfg['fps'])
         self.rand = QSpinBox(minimum=0, maximum=300, value=int(cfg['random_level'] * 100))
@@ -239,7 +240,8 @@ class SettingsDialog(QDialog):
         form.addRow(bb)
 
     def result_cfg(self):
-        return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=self.animal.currentData(),
+        animal, breed = self.animal.currentData().split('/')
+        return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed,
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
                     autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(),
@@ -307,7 +309,8 @@ class TinyPaws:
         self.geo = scr.availableGeometry()  # stay above the panel/taskbar
         s = cfg['scale']
         self.pet = brain.Pet(self.geo.width(), self.geo.height(), scale=s, random_level=cfg['random_level'],
-                             lang=cfg['lang'], name=cfg['name'], poems=cfg['poems'], species=cfg['animal'])
+                             lang=cfg['lang'], name=cfg['name'], poems=cfg['poems'], species=cfg['animal'],
+                             breed=cfg['breed'])
         if cfg['x'] is not None:
             self.pet.x = self.pet.clampx(cfg['x'])
         self.engine = ChatEngine.from_file()
@@ -353,7 +356,7 @@ class TinyPaws:
         m.addSeparator()
         m.addAction(self.t('quit'), self.quit)
         self.menu = m
-        self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap('idle' if self.cfg['animal'] == 'cat' else self.cfg['animal'] + ':idle')))
+        self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap(skin(self.cfg['animal'], self.cfg['breed']) + 'idle')))
         tip = 'TinyPaws – %s' % self.cfg['name']
         if self.cfg['twitch_channel']:
             tip += '\nTwitch: #%s' % self.cfg['twitch_channel']

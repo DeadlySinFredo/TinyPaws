@@ -45,9 +45,25 @@ class Species(unittest.TestCase):
 class Movement(unittest.TestCase):
     def test_walk_reaches_target(self):
         p = pet()
-        p.play(brain.Walk(100, prio=brain.P_USER))
-        run(p, 30)
-        self.assertNotIsInstance(p.action, brain.Walk) if p.x != 100 else self.assertEqual(p.x, 100)
+        a = brain.Walk(100, prio=brain.P_USER)
+        p.play(a)
+        for _ in range(30 * 60):
+            if a.update(p, 1 / 30):
+                break
+        self.assertEqual(p.x, 100)
+
+    def test_gait_styles_use_existing_frames(self):
+        for speed, style in ((1.0, 'walk'), (3.0, 'run'), (0.5, 'sneak')):
+            p = pet()
+            a = brain.Walk(p.maxx, speed=speed, prio=brain.P_USER)
+            self.assertEqual(a.style, style)
+            p.play(a)
+            seen = set()
+            for _ in range(60):
+                p.update(1 / 30)
+                seen.add(p.frame)
+                self.assertIn(p.frame, SIZES)
+            self.assertGreaterEqual(len(seen), 4)  # really cycles through the gait
 
     def test_jump_lands_on_floor(self):
         p = pet()
@@ -199,7 +215,7 @@ class Settings(unittest.TestCase):
             self.assertEqual(settings.load(f), cfg)
             f.write_text('{"scale": "huge", "fps": 999, "lang": "xx", "evil": 1}')
             c = settings.load(f)
-            self.assertEqual((c['scale'], c['fps'], c['lang']), (4, 60, 'de'))
+            self.assertEqual((c['scale'], c['fps'], c['lang']), (settings.DEFAULTS['scale'], 60, 'de'))
             self.assertNotIn('evil', c)
             f.write_text('not json')
             self.assertEqual(settings.load(f)['name'], 'Mochi')

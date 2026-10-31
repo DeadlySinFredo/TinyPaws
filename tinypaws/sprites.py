@@ -3,7 +3,7 @@
 Each sprite is a list of equal-length strings; each char maps to PALETTE.
 Pet frames come from cat32 (32x32, density 2 = 16 logical units); props are density 1.
 """
-from .cat32 import FRAMES
+from .cat32 import BREEDS, DENSITY as PET_DENSITY, EXTRA_PALETTE, FRAMES, skin  # noqa: F401 (re-exported)
 
 PALETTE = {
     'K': '#14111c', 'O': '#33303f', 'D': '#211e2b', 'L': '#f6f2ea', 'P': '#ff8fa3',
@@ -133,6 +133,7 @@ SPRITES = {k: _rows(v) if isinstance(v[0], list) else _rows(_grid(v)) for k, v i
 }.items()}
 
 SPRITES.update(FRAMES)
+PALETTE.update(EXTRA_PALETTE)
 # pixels per logical unit; the brain lays out in logical units, the renderer draws at scale/density
-DENSITY = {k: 2 for k in FRAMES}
+DENSITY = {k: PET_DENSITY for k in FRAMES}
 SIZES = {k: (len(v[0]) // DENSITY.get(k, 1), len(v) // DENSITY.get(k, 1)) for k, v in SPRITES.items()}

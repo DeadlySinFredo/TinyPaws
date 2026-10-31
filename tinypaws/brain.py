@@ -9,7 +9,7 @@ s = pixel scale. render() returns a list of draw items consumed by the renderer:
 import math
 import random
 
-from .sprites import SIZES
+from .sprites import BREEDS, SIZES, skin
 
 P_IDLE, P_RANDOM, P_CHAT, P_USER, P_SCENE = range(5)
 GRAVITY = 140  # * s px/s^2
@@ -69,21 +69,31 @@ class Idle(Action):
         return self.t >= self.dur
 
 
+# gait style -> (frames, logical units/s, seconds per cycle); speed/cycle chosen so paws don't slide
+GAITS = {'walk': (8, 12, 0.55), 'run': (6, 36, 0.42), 'sneak': (8, 6, 0.85)}
+
+
+def gait_frame(style, t):
+    n, _, cycle = GAITS[style]
+    return '%s%d' % (style, int(t / cycle * n) % n)
+
+
 class Walk(Action):
-    def __init__(self, tx, speed=1.0, prio=None):
+    def __init__(self, tx, speed=1.0, prio=None, style=None):
         super().__init__(prio)
-        self.tx, self.speed = tx, speed
+        self.tx = tx
+        self.style = style or ('run' if speed >= 2 else 'sneak' if speed < 0.75 else 'walk')
 
     def step(self, pet, dt):
         pet.y = pet.floor
-        v = 30 * self.speed * pet.s
+        v = GAITS[self.style][1] * pet.s
         d = self.tx - pet.x
         if abs(d) <= v * dt:
             pet.x = self.tx
             return True
         pet.facing = 1 if d > 0 else -1
         pet.x += pet.facing * v * dt
-        pet.frame = 'walk1' if int(self.t * 6 * self.speed) % 2 == 0 else 'walk2'
+        pet.frame = gait_frame(self.style, self.t)
         return False
 
 
@@ -244,8 +254,8 @@ class HypeTrain(Action):
             return False
         if self.phase == 'runoff':
             pet.facing = 1
-            pet.x += 120 * s * dt
-            pet.frame = 'walk1' if int(self.t * 12) % 2 else 'walk2'
+            pet.x += GAITS['run'][1] * 1.5 * s * dt
+            pet.frame = gait_frame('run', self.t * 1.5)
             if pet.x > pet.W + 4 * s:
                 self.phase, self.front = 'train', -LOCO_W * s
             return False
@@ -362,14 +372,14 @@ class Cinema(Action):
         if self.phase == 'walk':
             pet.y = pet.floor
             d = self.target - pet.x
-            v = 60 * s * dt
+            v = GAITS['walk'][1] * 2 * s * dt
             if abs(d) <= v:
                 pet.x = self.target
                 self._go('sit')
             else:
                 pet.facing = 1 if d > 0 else -1
                 pet.x += pet.facing * v
-                pet.frame = 'walk1' if int(self.t * 12) % 2 else 'walk2'
+                pet.frame = gait_frame('walk', self.t * 2)
             return False
         if self.phase == 'sit':
             pet.y, pet.frame = pet.floor - 5 * s, ('sit' if dtp < 0.5 else 'cinema')
@@ -404,11 +414,12 @@ class Cinema(Action):
 
 class Pet:
     def __init__(self, W, H, scale=4, rng=None, random_level=1.0, lang='de', name='Mochi', poems=True,
-                 species='cat'):
+                 species='cat', breed=''):
         self.W, self.H, self.s = W, H, scale
         self.rng = rng or random.Random()
         self.random_level, self.lang, self.name, self.poems = random_level, lang, name, poems
         self.species = species if species in SPECIES else 'cat'
+        self.skin = skin(self.species, breed)
         self.x, self.y = W / 2, self.floor
         self.facing, self.frame = 1, 'idle'
         self.action, self.queue, self.particles = None, [], []
@@ -461,7 +472,8 @@ class Pet:
             (1.2, lambda: Idle(r.uniform(2.0, 5.0), frame='sit')),
             (0.7 * L, lambda: Sleep(r.uniform(8, 20))),
             (1.0 * L, lambda: Jump()),
-            (0.5 * L, lambda: Walk(r.uniform(0, self.maxx), speed=3.0)),
+            (0.5 * L, lambda: Walk(r.uniform(0, self.maxx), style='run')),
+            (0.4 * L, lambda: Walk(r.uniform(0, self.maxx), style='sneak')),
             (0.4 * L, lambda: Emote(('walk1', 'jump'), 3.0, 4, prop='ball', bounce=True, prio=U)),
             (0.3 * L, lambda: Emote(('sit', 'happy'), 3.5, 1.5, prop='coffee', prio=U)),
             (0.1 * L, lambda: Teleport(prio=U)),
@@ -493,8 +505,7 @@ class Pet:
 
     def draw_self(self, out, frame=None):
         name = frame or self.frame
-        if self.species != 'cat':
-            name = '%s:%s' % (self.species, name)
+        name = self.skin + name
         w, h = SIZES[name]
         out.append(('sprite', name, self.x + (16 - w) * self.s / 2, self.y + (16 - h) * self.s, self.facing < 0))
 

@@ -4,7 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-DEFAULTS = dict(name='Mochi', animal='cat', scale=4, fps=30, random_level=1.0, lang='de',
+DEFAULTS = dict(name='Mochi', animal='cat', breed='', scale=6, fps=30, random_level=1.0, lang='de',
                 autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', first_run_done=False)
 
 
@@ -31,6 +31,9 @@ def load(path=None):
     cfg['name'] = str(cfg['name'])[:24] or DEFAULTS['name']
     cfg['twitch_channel'] = str(cfg['twitch_channel']).strip().lstrip('#').lower()[:25]
     cfg['animal'] = cfg['animal'] if cfg['animal'] in ('cat', 'dog') else 'cat'
+    from .sprites import BREEDS  # lazy: keep settings importable without building sprites
+    if cfg['breed'] not in BREEDS[cfg['animal']]:
+        cfg['breed'] = next(iter(BREEDS[cfg['animal']]))
     cfg['lang'] = cfg['lang'] if cfg['lang'] in ('de', 'en') else 'de'
     if cfg['x'] is not None and not isinstance(cfg['x'], (int, float)):
         cfg['x'] = None

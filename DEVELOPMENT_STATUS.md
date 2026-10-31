@@ -9,11 +9,14 @@
 - Einstellungen + Position werden gespeichert und beim Start wiederhergestellt; Autostart per XDG.
 - OBS-Browser-Quelle `http://127.0.0.1:8737/` (in Einstellungen aktivierbar), live im Browser geprüft: Katze erscheint transparent und synchron.
 - Twitch-Chat anonym: live mit 5 öffentlichen Kanälen verbunden, Chatnachrichten empfangen.
-- Neue Katze: 32×32 statt 16×16 bei gleicher Größe, Chibi-Stil schwarz-weiß (Tuxedo), große Glanzaugen, Schattierung; Idle/Überrascht/Cinema frontal sitzend, Laufen/Springen/Schlafen seitlich.
-- Gemessen: ~1 % CPU (30 FPS, 1 Kern), ~100 MB RSS; im Schlaf 8 FPS.
+- Tiere jetzt in 48×48 Pixeln (Dichte 3), Standardgröße 96 px (Skalierung 6 ≈ 3 Mauszeiger), runde Glanzaugen, Schnurrhaare.
+- Echter Gangzyklus mit Knie/Pfotenheben: Gehen (8 Frames), Galopp (6), Anschleichen (8, geduckt); Geschwindigkeit passend zur Schrittlänge (keine rutschenden Pfoten).
+- Hund (Beagle-Welpe) + Rassen: Katze Tuxedo/Rot getigert/Grau/Weiß/Schwarz/Creme, Hund Beagle/Golden Retriever/Husky/Corgi/Schwarzer Labrador/Weiß.
+- Katze ursprünglich: Chibi-Stil schwarz-weiß (Tuxedo), große Glanzaugen, Schattierung; Idle/Überrascht/Cinema frontal sitzend, Laufen/Springen/Schlafen seitlich.
+- Gemessen: ~2 % CPU (30 FPS, 1 Kern), ~115 MB RSS; im Schlaf 8 FPS.
 
 ## Getestet
-- `python3 -m unittest discover -s tests -t .` – 26 Tests (inkl. OBS-Server und Twitch-Parser/Validierung): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
+- `python3 -m unittest discover -s tests -t .` – 29 Tests (inkl. Gangarten, Hund in allen Szenen, OBS-Server und Twitch-Parser/Validierung): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
 - `scripts/render_preview.py` rendert Szenen offscreen als PNG (visuell geprüft).
 - Live-Start + Screenshot auf dem Desktop.
 
@@ -26,4 +29,4 @@ Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes
 - Settings-Änderung startet den Prozess neu.
 
 ## Nächste Schritte
-1. Twitch EventSub (Hype Train/Follows). 2. Hund + Vogel. 3. Mehr Memes.
+1. Twitch EventSub (Hype Train/Follows). 2. Vogel, Fuchs, Hase, Drache. 3. Mehr Memes.
