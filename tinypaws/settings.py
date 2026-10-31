@@ -10,7 +10,20 @@ DEFAULTS = dict(name='Mochi', animal='cat', breed='', pack='', scale=6, fps=30, 
 
 
 def config_dir():
-    return Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'tinypaws'
+    if os.environ.get('XDG_CONFIG_HOME'):
+        return Path(os.environ['XDG_CONFIG_HOME']) / 'tinypaws'
+    if sys.platform == 'win32':
+        return Path(os.environ.get('APPDATA') or Path.home()) / 'TinyPaws'
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'Application Support' / 'TinyPaws'
+    return Path.home() / '.config' / 'tinypaws'
+
+
+def launch_cmd():
+    """argv that starts TinyPaws again: the bundled executable, or python -m tinypaws from source."""
+    if getattr(sys, 'frozen', False):  # PyInstaller build
+        return [sys.executable]
+    return [sys.executable, '-m', 'tinypaws']
 
 
 def load(path=None):
@@ -55,16 +68,40 @@ def save(cfg, path=None):
 
 
 def autostart_file():
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'LaunchAgents' / 'org.tinypaws.TinyPaws.plist'
     return Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'autostart' / 'tinypaws.desktop'
 
 
 def set_autostart(enabled):
+    """Start on login: XDG autostart (Linux), HKCU Run key (Windows), LaunchAgent (macOS)."""
+    cmd = launch_cmd()
+    root = str(Path(__file__).resolve().parent.parent)  # source checkout needs it on PYTHONPATH
+    if sys.platform == 'win32':
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Run', 0,
+                            winreg.KEY_SET_VALUE) as k:
+            if enabled:
+                winreg.SetValueEx(k, 'TinyPaws', 0, winreg.REG_SZ, ' '.join('"%s"' % c for c in cmd))
+            else:
+                try:
+                    winreg.DeleteValue(k, 'TinyPaws')
+                except FileNotFoundError:
+                    pass
+        return
     f = autostart_file()
     if not enabled:
         f.unlink(missing_ok=True)
         return
-    root = Path(__file__).resolve().parent.parent
     f.parent.mkdir(parents=True, exist_ok=True)
+    if sys.platform == 'darwin':
+        args = ''.join('<string>%s</string>' % c for c in cmd)
+        f.write_text('<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict>'
+                     '<key>Label</key><string>org.tinypaws.TinyPaws</string>'
+                     '<key>ProgramArguments</key><array>%s</array>'
+                     '<key>EnvironmentVariables</key><dict><key>PYTHONPATH</key><string>%s</string></dict>'
+                     '<key>RunAtLoad</key><true/></dict></plist>\n' % (args, root), encoding='utf-8')
+        return
     f.write_text('[Desktop Entry]\nType=Application\nName=TinyPaws\nComment=Pixel desktop pet\n'
-                 'Exec=env PYTHONPATH="%s" "%s" -m tinypaws\nX-KDE-autostart-after=panel\n'
-                 'X-GNOME-Autostart-enabled=true\n' % (root, sys.executable), encoding='utf-8')
+                 'Exec=env PYTHONPATH="%s" %s\nX-KDE-autostart-after=panel\n'
+                 'X-GNOME-Autostart-enabled=true\n' % (root, ' '.join('"%s"' % c for c in cmd)), encoding='utf-8')

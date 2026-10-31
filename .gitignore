@@ -1,4 +1,6 @@
 __pycache__/
 *.pyc
 *.png
-!assets/**/*.png
+!packaging/*.png
+build/
+dist/

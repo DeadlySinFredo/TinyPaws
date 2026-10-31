@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import brain, settings
 from .obs import ObsServer
-from . import kwin, packs
+from . import packs
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
 from .eventsub import TwitchEventSub, valid_client_id
@@ -188,6 +188,7 @@ class Overlay(QWidget):
     def __init__(self, ctl):
         super().__init__(None, _TOP | Qt.WindowTransparentForInput)
         self.ctl, self.items = ctl, []
+        self.setAttribute(Qt.WA_MacAlwaysShowToolWindow)  # macOS hides tool windows of inactive apps
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
         self.setWindowTitle('TinyPaws')
@@ -203,6 +204,7 @@ class Handle(QWidget):
     def __init__(self, ctl):
         super().__init__(None, _TOP)
         self.ctl = ctl
+        self.setAttribute(Qt.WA_MacAlwaysShowToolWindow)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
         self.setCursor(Qt.OpenHandCursor)
@@ -376,6 +378,7 @@ class TinyPaws:
                 print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
         self.kwin, self.win_seen = None, None
         if cfg['climb'] and 'KDE' in os.environ.get('XDG_CURRENT_DESKTOP', ''):
+            from . import kwin  # QtDBus: Linux/KDE only
             self.kwin = kwin.KWinWindows(settings.config_dir() / 'kwin_windows.js')
         self.es, self.es_state = None, ''
         if valid_client_id(cfg['twitch_client_id']):
@@ -590,7 +593,10 @@ class TinyPaws:
             # shortcut: restart to apply scale/screen/lang everywhere; fine for a settings change
             root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             os.environ['PYTHONPATH'] = root + os.pathsep + os.environ.get('PYTHONPATH', '')
-            os.execv(sys.executable, [sys.executable, '-m', 'tinypaws'])
+            cmd = settings.launch_cmd()
+            if self.kwin:
+                self.kwin.close()
+            os.execv(cmd[0], cmd)
 
     def quit(self):
         self.cfg['x'] = self.pet.x
