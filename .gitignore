@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.png
+!packaging/*.png
+!assets/**/*.png
+build/
+dist/
