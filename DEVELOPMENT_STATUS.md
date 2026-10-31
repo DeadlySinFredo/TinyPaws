@@ -9,6 +9,7 @@
 - Einstellungen + Position werden gespeichert und beim Start wiederhergestellt; Autostart per XDG.
 - OBS-Browser-Quelle `http://127.0.0.1:8737/` (in Einstellungen aktivierbar), live im Browser geprüft: Katze erscheint transparent und synchron.
 - Twitch-Chat anonym: live mit 5 öffentlichen Kanälen verbunden, Chatnachrichten empfangen.
+- Neue Katze: 32×32 statt 16×16 bei gleicher Größe, Chibi-Stil schwarz-weiß (Tuxedo), große Glanzaugen, Schattierung; Idle/Überrascht/Cinema frontal sitzend, Laufen/Springen/Schlafen seitlich.
 - Gemessen: ~1 % CPU (30 FPS, 1 Kern), ~100 MB RSS; im Schlaf 8 FPS.
 
 ## Getestet

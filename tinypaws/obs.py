@@ -8,16 +8,16 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .sprites import PALETTE, SPRITES
+from .sprites import DENSITY, PALETTE, SPRITES
 
 PAGE = r"""<!doctype html><meta charset="utf-8"><title>TinyPaws OBS</title>
 <style>html,body{margin:0;background:transparent;overflow:hidden}canvas{width:100vw;height:100vh;object-fit:contain;image-rendering:pixelated}</style>
 <canvas id="c"></canvas><script>
-const c=document.getElementById('c'),g=c.getContext('2d');let S={},P={},cache={},scale=0;
-function sprite(n,f){const k=n+f;if(cache[k])return cache[k];const r=S[n],o=document.createElement('canvas');
-o.width=r[0].length*scale;o.height=r.length*scale;const x=o.getContext('2d');
+const c=document.getElementById('c'),g=c.getContext('2d');let S={},P={},D={},cache={},scale=0;
+function sprite(n,f){const k=n+f;if(cache[k])return cache[k];const r=S[n],o=document.createElement('canvas'),ps=scale/(D[n]||1);
+o.width=Math.round(r[0].length*ps);o.height=Math.round(r.length*ps);const x=o.getContext('2d');
 if(f){x.translate(o.width,0);x.scale(-1,1)}
-r.forEach((row,y)=>[...row].forEach((ch,i)=>{if(ch!='.'){x.fillStyle=P[ch];x.fillRect(i*scale,y*scale,scale,scale)}}));
+r.forEach((row,y)=>[...row].forEach((ch,i)=>{if(ch!='.'){x.fillStyle=P[ch];x.fillRect(i*ps,y*ps,ps,ps)}}));
 return cache[k]=o}
 function font(px){g.font='bold '+Math.max(8,px|0)+'px "DejaVu Sans Mono",monospace'}
 function draw(f){if(c.width!=f.w||c.height!=f.h){c.width=f.w;c.height=f.h}
@@ -37,7 +37,7 @@ g.lineTo(cx+R*Math.cos(b-0.1),cy+R*Math.sin(b-0.1));g.lineTo(cx+R*Math.cos(b+0.1
 else if(k=='spot'){const[,cx,top,bot,wt,wb,a]=it,gr=g.createLinearGradient(0,top,0,bot);
 gr.addColorStop(0,`rgba(255,250,220,${0.08*a})`);gr.addColorStop(1,`rgba(255,250,220,${0.43*a})`);
 g.fillStyle=gr;g.beginPath();g.moveTo(cx-wt,top);g.lineTo(cx+wt,top);g.lineTo(cx+wb,bot);g.lineTo(cx-wb,bot);g.fill()}}}
-fetch('sprites.json').then(r=>r.json()).then(d=>{S=d.sprites;P=d.palette;
+fetch('sprites.json').then(r=>r.json()).then(d=>{S=d.sprites;P=d.palette;D=d.density;
 new EventSource('stream').onmessage=e=>draw(JSON.parse(e.data))});
 </script>"""
 
@@ -46,7 +46,7 @@ class ObsServer:
     def __init__(self, port=8737, fps=30):
         self.fps, self.frame, self.seq = fps, '{"w":1,"h":1,"s":1,"items":[]}', 0
         self.cond = threading.Condition()
-        assets = json.dumps({'sprites': SPRITES, 'palette': PALETTE}).encode()
+        assets = json.dumps({'sprites': SPRITES, 'palette': PALETTE, 'density': DENSITY}).encode()
         srv = self
 
         class H(BaseHTTPRequestHandler):

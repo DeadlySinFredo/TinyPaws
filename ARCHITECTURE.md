@@ -6,7 +6,8 @@ Die Logik ist Qt-frei und damit portierbar (z. B. Rust/Tauri oder Browser-Overla
 
 | Modul | Aufgabe |
 |---|---|
-| `tinypaws/sprites.py` | Pixel-Art als Zeichen-Raster + Palette (reine Daten). Props per Rechteck/Kreis-Helfer. |
+| `tinypaws/cat32.py` | Katze in 32×32 (Chibi-Tuxedo), prozedural aus Ellipsen/Linien/Dreiecken, automatische Schattierung + Kontur. |
+| `tinypaws/sprites.py` | Palette, Props als Zeichen-Raster, `DENSITY` (Pixel pro logischer Einheit: Katze 2, Props 1) und `SIZES` in logischen Einheiten. |
 | `tinypaws/brain.py` | Animation Engine / State Machine: `Pet`, Aktionen (`Idle`, `Walk`, `Sleep`, `Jump`, `Held`, `Emote`, `Teleport`), Szenen (`HypeTrain`, `GigaChad`, `Cinema`), Partikel, Sprechblasen, gewichteter Zufall, Event-Routing (`handle_event`), `make_action` aus JSON-Specs. Erzeugt eine Liste von Zeichen-Befehlen. |
 | `tinypaws/reactions.py` + `.json` | Chat Reaction Engine ohne KI: Regex, Chance, Regel-/globaler Cooldown, Längenlimit, kaputte Regeln werden übersprungen. |
 | `tinypaws/settings.py` | Validierte JSON-Einstellungen (atomar geschrieben), XDG-Autostart. |

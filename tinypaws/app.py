@@ -14,7 +14,7 @@ from . import brain, settings
 from .obs import ObsServer
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
-from .sprites import PALETTE, SPRITES
+from .sprites import DENSITY, PALETTE, SPRITES
 
 TR = {
     'de': dict(panel='Testpanel', settings='Einstellungen', interact='Interaktion (Ziehen)', quit='Beenden',
@@ -71,7 +71,8 @@ class Renderer:
                 for x, c in enumerate(row):
                     if c != '.':
                         img.setPixelColor(x, y, QColor(PALETTE[c]))
-            img = img.scaled(img.width() * self.s, img.height() * self.s, Qt.IgnoreAspectRatio,
+            f = self.s / DENSITY.get(name, 1)
+            img = img.scaled(round(img.width() * f), round(img.height() * f), Qt.IgnoreAspectRatio,
                              Qt.FastTransformation)
             pm = QPixmap.fromImage(img)
             if flip:

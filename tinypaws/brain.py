@@ -252,7 +252,7 @@ class HypeTrain(Action):
         if self.phase == 'train':
             self.front += 45 * s * dt
             top = pet.H - 27 * s
-            pet.x, pet.y, pet.facing, pet.frame = self.front - 6 * s, top + 4 * s, 1, 'happy'
+            pet.x, pet.y, pet.facing, pet.frame = self.front - 1.5 * s, top + 4 * s, 1, 'idle'
             self.smoke_t += dt
             if self.smoke_t > 0.07:
                 self.smoke_t = 0

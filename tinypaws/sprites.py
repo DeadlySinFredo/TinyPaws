@@ -1,14 +1,15 @@
 """Pixel-art sprites as character grids. Pure data, no Qt. '.' = transparent.
 
 Each sprite is a list of equal-length strings; each char maps to PALETTE.
-Pet frames are 16x16 (wider frames are centred on the 16px box by the brain).
+Pet frames come from cat32 (32x32, density 2 = 16 logical units); props are density 1.
 """
+from .cat32 import FRAMES
 
 PALETTE = {
-    'K': '#2b1d16', 'O': '#f2a541', 'D': '#c9762b', 'L': '#fff1d6', 'P': '#ff8fa3',
+    'K': '#14111c', 'O': '#33303f', 'D': '#211e2b', 'L': '#f6f2ea', 'P': '#ff8fa3',
     'E': '#1b1b1b', 'W': '#ffffff', 'N': '#26262e', 'S': '#8a8a96', 'R': '#d93a3a',
     'r': '#9c2424', 'Y': '#ffd23f', 'B': '#3a6fd9', 'b': '#25479c', 'G': '#3fbf5f',
-    'M': '#7a4a24', 'C': '#fff7e0', 'T': '#2ec4b6',
+    'M': '#7a4a24', 'C': '#fff7e0', 'T': '#2ec4b6', 'H': '#4d4960', 'g': '#5cc24a',
 }
 
 
@@ -45,99 +46,6 @@ def _circle(g, cx, cy, r, c, outline='K'):
 
 def _rows(g):
     return [''.join(r) for r in g]
-
-
-# ---------------------------------------------------------------- cat
-_HEAD = [
-    "................",
-    "..........K...K.",
-    ".........KOK.KOK",
-    ".........KOOKOOK",
-    ".........KODOOOK",
-    ".........KOEOOEK",
-    ".........KOOPOOK",
-    ".........KLOOOLK",
-    "..........KOOOK.",
-]
-_BODY = [
-    "...KKKKKKKKOOOK.",
-    "..KOODOODOOOOOK.",
-    "..KOOOOOOOOOOOK.",
-    "..KOLLLLLLLLOOK.",
-    "...KKKKKKKKKKK..",
-]
-_LEGS = {
-    'stand': ["...KO.KO...KO.KO", "...KK.KK...KK.KK"],
-    'walk1': ["..KO..KO..KO..KO", "..KK..KK..KK..KK"],
-    'walk2': ["....KOKO....KOKO", "....KKKK....KKKK"],
-    'jump': [".KO..........KO.", "KK............KK"],
-    'sit': ["...KOOOK..KOK...", "...KKKKK..KKK..."],
-}
-_TAIL = [(1, 4, "K"), (0, 5, "KOK"), (0, 6, "KOK"), (0, 7, "KOK"), (1, 8, "KOOK")]
-
-
-def _cat(legs='stand', eyes=None, tail=True):
-    g = _grid(_HEAD + _BODY + _LEGS[legs], 16)
-    if tail:
-        for x, y, s in _TAIL:
-            _put(g, x, y, s)
-    if eyes:
-        for row in g:
-            for i, c in enumerate(row):
-                if c == 'E':
-                    row[i] = eyes
-    return g
-
-
-def _sleep():
-    head = [r.replace('E', 'K') for r in _HEAD[1:8]]
-    return _grid(["."] * 5 + head + [
-        "..KKKKKKKOOOOOK.",
-        "..KOODOODOOOOOK.",
-        "KOKOOOOOOOOOOOK.",
-        "KKKKKKKKKKKKKKK.",
-    ], 16)
-
-
-def _flex():
-    base = _cat(tail=False)
-    g = _blank(20, 16)
-    for y, row in enumerate(base):
-        for x, c in enumerate(row):
-            if c != '.':
-                g[y][x + 2] = c
-    _put(g, 12, 5, "NNKNNN")  # sunglasses
-    for x, y, s in [(18, 7, "KK"), (17, 8, "KOK"), (17, 9, "KOK"), (15, 10, "KOOOK"), (15, 11, "KKKK"),
-                    (0, 7, "KK"), (0, 8, "KOK"), (0, 9, "KOK"), (0, 10, "KOOOK"), (1, 11, "KKKK")]:
-        _put(g, x, y, s)
-    return g
-
-
-def _cinema():
-    g = _grid([
-        "................",
-        "................",
-        "....K......K....",
-        "...KOK....KOK...",
-        "...KOOKKKKOOK...",
-        "...KOOOOOOOOK...",
-        "...KOEOOOOEOK...",
-        "...KOOOPPOOOK...",
-        "...KLOOKKOOLK...",
-        "....KKOOOOKK....",
-        "...KOOOOOOOOK...",
-        "..KOOLLLLLLOOK..",
-        "..KOOLLLLLLOOK..",
-        "..KOOOOOOOOOOK..",
-        "..KOOKOOOOKOOK..",
-        "..KKKKKKKKKKKK..",
-    ], 16)
-    arm = [(0, 0, "KK"), (0, 1, "KOK"), (1, 2, "KOK"), (1, 3, "KOK"), (2, 4, "KOK"),
-           (2, 5, "KO"), (2, 6, "KO"), (2, 7, "KO"), (2, 8, "KO"), (2, 9, "KO")]
-    for x, y, s in arm:
-        _put(g, x, y, s)
-        _put(g, 16 - x - len(s), y, s[::-1])
-    return g
 
 
 # ---------------------------------------------------------------- props
@@ -218,13 +126,12 @@ POPCORN = [".Y.YY.Y.", "YYYYYYYY", "KYYYYYYK", "KRWRWRWK", "KRWRWRWK",
 BANANA = ["......KK", ".....KYK", "....KYYK", "...KYYK.", "KKKYYYK.", "KYYYYK..", ".KKKK..."]
 
 SPRITES = {k: _rows(v) if isinstance(v[0], list) else _rows(_grid(v)) for k, v in {
-    'idle': _cat(), 'blink': _cat(eyes='K'), 'happy': _cat(eyes='K'),
-    'walk1': _cat('walk1'), 'walk2': _cat('walk2'), 'jump': _cat('jump'),
-    'sit': _cat('sit'), 'surprised': _cat(eyes='W'), 'stretch': _cat('jump', eyes='K'),
-    'sleep': _sleep(), 'flex': _flex(), 'cinema': _cinema(),
     'chair': _chair(), 'chair_front': _chair_front(), 'loco': _loco(),
     'wagon0': _wagon('R'), 'wagon1': _wagon('B'), 'wagon2': _wagon('G'), 'wagon3': _wagon('Y'),
     'ball': _ball(), 'pizza': PIZZA, 'coffee': COFFEE, 'popcorn': POPCORN, 'banana': BANANA,
 }.items()}
 
-SIZES = {k: (len(v[0]), len(v)) for k, v in SPRITES.items()}
+SPRITES.update(FRAMES)
+# pixels per logical unit; the brain lays out in logical units, the renderer draws at scale/density
+DENSITY = {k: 2 for k in FRAMES}
+SIZES = {k: (len(v[0]) // DENSITY.get(k, 1), len(v) // DENSITY.get(k, 1)) for k, v in SPRITES.items()}
