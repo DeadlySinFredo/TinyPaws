@@ -10,9 +10,11 @@ from .cat32 import K, _blank, _ell, _finish, _line, _thin, _tri
 COLORS = {
     'q': '#f06a5e', 'u': '#6b9cf0', 'y': '#c9a227', 'n': '#4a4a58', 's': '#c4c4d0',
     't': '#1f8f86', 'j': '#e0a965', 'i': '#2b8f45', 'k': '#6fdc8a', 'z': '#ffe680',
+    'o': '#ff9f1c', 'x': '#c8955a', 'X': '#9c6d3a', 'v': '#e8e8f0',
 }
 SHADE = {'R': ('q', 'r'), 'B': ('u', 'b'), 'Y': ('z', 'y'), 'N': ('n', None), 'T': ('W', 't'),
-         'W': (None, 's'), 'G': ('k', 'i'), 'M': ('j', None), 'S': ('s', 'n'), 'C': ('W', 'j')}
+         'W': (None, 'v'), 'G': ('k', 'i'), 'M': ('j', None), 'S': ('s', 'n'), 'C': ('W', 'j'),
+         'x': ('j', 'X')}
 
 
 def _box(g, x0, y0, x1, y1, c):
@@ -169,6 +171,131 @@ def banana():
     return _finish(g, SHADE)
 
 
+def flame(i):
+    """Cartoon flame (This is Fine), two flicker frames."""
+    g = _blank(16, 24)
+    sway = (-1.5, 1.5)[i]
+    _ell(g, 8, 17, 6.5, 6.5, 'R')
+    _tri(g, (1.8, 16), (14.2, 16), (8 + sway * 1.5, 1), 'R')
+    _ell(g, 8, 18.5, 4.5, 4.5, 'o')
+    _tri(g, (3.8, 18), (12.2, 18), (8 - sway, 6), 'o')
+    _ell(g, 8, 20, 2.5, 2.8, 'Y')
+    _tri(g, (5.6, 20), (10.4, 20), (8 + sway * 0.5, 12), 'Y')
+    return _finish(g)
+
+
+def hammer(down):
+    """Squeaky toy mallet: raised (diagonal) or striking (horizontal)."""
+    g = _blank(24, 24)
+    if down:  # head lying flat on top of the victim
+        _line(g, [(22, 2), (13, 12)], 1.1, 'M')
+        _line(g, [(4, 15), (20, 15)], 3.6, 'R')
+        for x in (7, 17):
+            _line(g, [(x, 12), (x, 18)], 0.6, 'Y')
+    else:
+        _line(g, [(4, 21), (14, 9)], 1.1, 'M')
+        _line(g, [(9, 2), (21, 14)], 3.6, 'R')
+        for a, b in (((9, 6), (13, 2)), ((17, 14), (21, 10))):
+            _line(g, [a, b], 0.6, 'Y')
+    return _finish(g, SHADE)
+
+
+def chefhat():
+    g = _blank(20, 16)
+    for x, y, r in ((5, 6.5, 4.4), (10, 4.8, 5), (15, 6.5, 4.4)):
+        _ell(g, x, y, r, r * 0.9, 'W')
+    _box(g, 4, 9, 16, 15, 'W')
+    _thin(g, (8, 10), (8, 14), 'v')
+    _thin(g, (12, 10), (12, 14), 'v')
+    return _finish(g, SHADE)
+
+
+def stove():
+    g = _blank(32, 24)
+    _box(g, 2, 9, 30, 24, 'S')
+    _box(g, 1, 8, 31, 10, 'N')
+    _box(g, 6, 13, 22, 21, 'N')
+    _box(g, 7.5, 14.5, 20.5, 19.5, 'o')  # oven glow
+    for x in (25.5, 28):
+        _ell(g, x, 14, 1, 1, 'N')
+    _ell(g, 14, 6.5, 9, 2, 'N')  # pan
+    _line(g, [(22, 6.5), (30, 4)], 0.8, 'M')
+    _ell(g, 12, 5.6, 3.2, 1.1, 'W')  # egg
+    _ell(g, 12.4, 5.4, 1.1, 0.8, 'Y')
+    _ell(g, 17, 5.8, 1.6, 0.8, 'M')  # bacon-ish bit
+    return _finish(g, SHADE)
+
+
+def suitcase():
+    g = _blank(20, 16)
+    _line(g, [(7, 5), (7, 2), (13, 2), (13, 5)], 0.7, 'N')
+    _box(g, 1, 4, 19, 15.5, 'M')
+    for x in (5, 15):
+        _box(g, x, 4, x + 1.4, 15.5, 'X')
+    _box(g, 8, 7, 12, 10, 'R')  # stickers
+    _ell(g, 4, 12, 1.4, 1.4, 'B')
+    _box(g, 13.5, 11, 17, 13.5, 'Y')
+    return _finish(g, {**SHADE, 'M': ('j', 'X')})
+
+
+def trophy():
+    g = _blank(20, 24)
+    for x in (3.5, 16.5):
+        _ell(g, x, 8, 2.6, 3.2, 'Y')
+        _ell(g, x, 8, 1.2, 1.8, '.')
+    _box(g, 4, 3, 16, 9, 'Y')
+    _ell(g, 10, 9, 6, 5.5, 'Y')
+    _ell(g, 10, 3, 6, 1.4, 'y')
+    _box(g, 8.6, 13.5, 11.4, 18, 'Y')
+    _box(g, 5, 18, 15, 23.5, 'M')
+    _box(g, 7, 19.5, 13, 22, 'Y')
+    _ell(g, 7.5, 7, 0.8, 1.6, 'W')
+    return _finish(g, SHADE)
+
+
+def tombstone():
+    g = _blank(24, 28)
+    _ell(g, 12, 10, 10, 8.5, 'S')
+    _box(g, 2, 10, 22, 25, 'S')
+    _thin(g, (16, 6), (14, 10), 'n')
+    _thin(g, (14, 10), (16, 13), 'n')
+    _ell(g, 12, 26, 12, 2.5, 'G')
+    for x in (3, 8, 15, 20):
+        _tri(g, (x - 1, 25), (x + 1, 25), (x, 22.5), 'G')
+    return _finish(g, SHADE)
+
+
+def box(front_only=False):
+    """Cardboard box; front_only = the front face drawn over a pet sitting inside."""
+    g = _blank(40, 24)
+    if not front_only:
+        _tri(g, (2, 9), (12, 9), (-1, 2), 'x')  # open flaps
+        _tri(g, (28, 9), (38, 9), (41, 2), 'x')
+        _box(g, 4, 6, 36, 10, 'X')
+    _box(g, 2, 9, 38, 24, 'x')
+    _box(g, 17, 9, 23, 13, 'C')  # tape
+    _thin(g, (6, 15), (12, 15), 'X')  # 'fragile' scribble
+    _thin(g, (6, 17), (10, 17), 'X')
+    return _finish(g, SHADE)
+
+
+def ghost():
+    g = _blank(24, 28)
+    _ell(g, 12, 10, 10, 9, 'W')
+    _box(g, 2, 10, 22, 23, 'W')
+    for x in (2, 8.7, 15.4):
+        _tri(g, (x, 22), (x + 6.6, 22), (x + 3.3, 27), 'W')
+    _ell(g, 8, 10, 1.8, 2.4, 'N')
+    _ell(g, 16, 10, 1.8, 2.4, 'N')
+    _ell(g, 12, 16, 2.4, 3, 'N')
+    _ell(g, 4.5, 13.5, 1.4, 0.8, 'P')
+    _ell(g, 19.5, 13.5, 1.4, 0.8, 'P')
+    return _finish(g, SHADE)
+
+
 PROPS = {'chair': chair(), 'chair_front': chair_front(), 'loco': loco(), 'ball': ball(), 'pizza': pizza(),
          'coffee': coffee(), 'popcorn': popcorn(), 'banana': banana(),
+         'flame0': flame(0), 'flame1': flame(1), 'hammer_up': hammer(False), 'hammer_down': hammer(True),
+         'chefhat': chefhat(), 'stove': stove(), 'suitcase': suitcase(), 'trophy': trophy(),
+         'tombstone': tombstone(), 'box': box(), 'box_front': box(True), 'ghost': ghost(),
          **{'wagon%d' % i: wagon(i) for i in range(4)}}

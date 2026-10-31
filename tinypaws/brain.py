@@ -419,6 +419,188 @@ class Cinema(Action):
             out.append(('text', self.title, cx, chair_y - 10 * s, 6 * s, '#ffffff'))
 
 
+def _tr(v, lang):
+    """Bilingual text: (de, en) tuple or plain string."""
+    return (v[0] if lang == 'de' else v[1]) if isinstance(v, tuple) else v
+
+
+FIRE = [('flame', -8, None, 'flicker', 'back'), ('flame', 17, None, 'flicker'), ('flame', 22, None, 'flicker')]
+CHAOS_FRAMES = ['jump', 'surprised', 'sleep', 'flex', 'cinema', 'sit', 'run3', 'sneak5', 'happy', 'stretch']
+CHAOS_TALK = ['???', 'brrr', '404', 'LOL', '*glitch*', 'AAA', 'bruh', '...wtf']
+
+# Meme timelines. Step keys: t (s), frames, fps, flip, bubble, confetti, fx (stars/steam/notes/hearts/glitch),
+# props [(name, dx, dy, anim, layer, label)] in pet-box units (dy None = stands on the floor),
+# hop, chaos, hidden, walk_off, home. Names starting with '@' are the pet's own frames (a second pet).
+MEMES = {
+    'thisisfine': [
+        {'t': 0.6, 'frames': ['surprised'], 'props': FIRE},
+        {'t': 4.0, 'frames': ['sit'], 'bubble': ('Alles gut.', 'This is fine.'),
+         'props': FIRE + [('coffee', 12, None, None)]},
+    ],
+    'bonk': [
+        {'t': 0.6, 'frames': ['stand'], 'props': [('hammer_up', 9, -12, None)]},
+        {'t': 0.35, 'frames': ['surprised'], 'bubble': '*BONK*', 'props': [('hammer_down', 2, -8, None)]},
+        {'t': 1.6, 'frames': ['sleep'], 'fx': 'stars'},
+        {'t': 0.6, 'frames': ['stretch']},
+    ],
+    'cook': [
+        {'t': 0.5, 'frames': ['surprised'], 'props': [('chefhat', 6, -5, 'drop')]},
+        {'t': 4.0, 'frames': ['stand', 'stand_blink'], 'fps': 1.5, 'fx': 'steam', 'bubble': 'Let him cook!',
+         'props': [('chefhat', 6, -5, None), ('stove', 14, None, None)]},
+    ],
+    'exit': [
+        {'t': 1.8, 'frames': ['stand'], 'bubble': ('Ich bin raus.', "I'm out."), 'props': [('suitcase', 10, None, 'drop')]},
+        {'walk_off': True, 'props': [('suitcase', 10, None, None)]},
+        {'t': 2.0, 'hidden': True},
+        {'home': True, 'bubble': ('...doch nicht.', '...never mind.')},
+    ],
+    'achievement': [
+        {'t': 3.5, 'frames': ['happy', 'idle'], 'fps': 2, 'confetti': 50, 'text': 'ACHIEVEMENT UNLOCKED',
+         'props': [('trophy', 14, None, 'drop')]},
+    ],
+    'rip': [
+        {'t': 0.4, 'frames': ['surprised']},
+        {'t': 3.0, 'frames': ['sleep'], 'props': [('tombstone', -11, None, 'rise', 'back', 'RIP')]},
+        {'t': 1.2, 'frames': ['surprised', 'jump'], 'fps': 4, 'bubble': ('Nur Spaß!', 'Just kidding!')},
+    ],
+    'sus': [
+        {'t': 3.5, 'frames': ['stand', 'stand_blink'], 'fps': 1.2, 'flip': True, 'bubble': 'sus...'},
+    ],
+    'cds': [
+        {'t': 0.6, 'frames': ['surprised'], 'props': [('box', 14, None, 'drop')]},
+        {'t': 3.5, 'frames': ['happy', 'idle'], 'fps': 2, 'fx': 'hearts',
+         'bubble': ('Cat Distribution System hat geliefert!', 'The Cat Distribution System delivered!'),
+         'props': [('box', 14, None, None), ('@idle', 16, -4, 'rise'), ('box_front', 14, None, None)]},
+    ],
+    'party': [
+        {'t': 4.0, 'frames': ['happy', 'jump', 'walk1', 'jump'], 'fps': 6, 'flip': True, 'fx': 'notes',
+         'bubble': ('Tanz-Party!', 'Dance party!')},
+    ],
+    'brainrot': [{'t': 4.0, 'chaos': True, 'fx': 'glitch'}],
+    'scare': [
+        {'t': 0.5, 'frames': ['stand'], 'props': [('ghost', -12, -1, 'rise', 'back')]},
+        {'t': 0.7, 'frames': ['surprised'], 'hop': True, 'bubble': ('BUH!', 'BOO!'),
+         'props': [('ghost', -10, -1, None, 'back')]},
+        {'t': 1.5, 'frames': ['surprised', 'jump'], 'fps': 8, 'bubble': 'AAAH!'},
+    ],
+}
+
+
+class Meme(Action):
+    """Plays a MEMES timeline."""
+    prio = P_CHAT
+
+    def __init__(self, name, prio=None):
+        super().__init__(prio)
+        self.name, self.steps, self.i, self.t0 = name, MEMES[name], -1, 0.0
+
+    def start(self, pet):
+        self.home, self.vy, self.chaos_t = pet.x, 0.0, 0.0
+        self._enter(pet, 0)
+
+    def _enter(self, pet, i):
+        self.i, self.t0 = i, self.t
+        if i >= len(self.steps):
+            return
+        st = self.steps[i]
+        if st.get('bubble'):
+            pet.say(_tr(st['bubble'], pet.lang), min(st.get('t', 3.0), 3.0))
+        if st.get('confetti'):
+            pet.confetti(st['confetti'])
+        if st.get('walk_off'):
+            pet.facing = -1 if pet.x < pet.W / 2 else 1  # leave through the nearer edge
+        if st.get('home'):
+            pet.x, pet.y, self.vy, pet.facing = self.home, -16 * pet.s, 0.0, 1
+
+    def step(self, pet, dt):
+        st, lt, s = self.steps[self.i], self.t - self.t0, pet.s
+        if st.get('walk_off'):
+            pet.y = pet.floor
+            pet.x += pet.facing * GAITS['walk'][1] * 1.5 * s * dt
+            pet.frame = gait_frame('walk', lt * 1.5)
+            done = pet.x < -16 * s or pet.x > pet.W or lt > 15
+        elif st.get('home'):
+            self.vy += GRAVITY * s * dt
+            pet.y = min(pet.floor, pet.y + self.vy * dt)
+            pet.frame = 'jump' if pet.y < pet.floor else 'sit'
+            done = pet.y >= pet.floor
+        else:
+            pet.y = pet.floor - (math.sin(math.pi * min(1.0, lt / st['t'])) * 12 * s if st.get('hop') else 0)
+            done = lt >= st['t']
+        if st.get('frames'):
+            k = int(lt * st.get('fps', 4))
+            pet.frame = st['frames'][k % len(st['frames'])]
+            if st.get('flip'):
+                pet.facing = 1 if k % 2 == 0 else -1
+        if st.get('chaos'):
+            self.chaos_t -= dt
+            if self.chaos_t <= 0:
+                self.chaos_t = 0.2
+                pet.frame = pet.rng.choice(CHAOS_FRAMES)
+                pet.facing = pet.rng.choice((1, -1))
+                pet.x = pet.clampx(pet.x + pet.rng.uniform(-3, 3) * s)
+                if pet.rng.random() < 0.3:
+                    pet.say(pet.rng.choice(CHAOS_TALK), 0.6)
+        self._fx(pet, st.get('fx'), dt)
+        if done:
+            self._enter(pet, self.i + 1)
+        return self.i >= len(self.steps)
+
+    def _fx(self, pet, fx, dt):
+        s, r = pet.s, pet.rng
+        if not fx or r.random() > dt * 8:  # ~8 particles/s
+            return
+        if fx == 'stars':
+            a = self.t * 6
+            pet.emit(kind='text', text='*', x=pet.cx + math.cos(a) * 7 * s, y=pet.y + 9 * s + math.sin(a) * 2 * s,
+                     ttl=0.5, size=4 * s, color='#ffd23f', g=0)
+        elif fx == 'steam':
+            pet.emit(x=pet.cx + pet.facing * 13 * s + r.uniform(-3, 3) * s, y=pet.floor + 6 * s, vy=-12 * s,
+                     ttl=1.0, w=2 * s, h=2 * s, color='#e8e8f0', g=-2)
+        elif fx == 'notes':
+            pet.emit(kind='text', text=r.choice('♪♫'), x=pet.cx + r.uniform(-8, 8) * s, y=pet.y, vy=-14 * s,
+                     ttl=1.5, size=5 * s, color=r.choice(CONFETTI), g=0)
+        elif fx == 'hearts':
+            pet.emit(kind='text', text='♥', x=pet.cx + pet.facing * 12 * s + r.uniform(-6, 6) * s, y=pet.y,
+                     vy=-10 * s, ttl=1.4, size=4 * s, color='#ff4d6d', g=0)
+
+    def draw(self, pet, out):
+        st = self.steps[min(self.i, len(self.steps) - 1)]
+        lt, s = self.t - self.t0, pet.s
+        props = st.get('props', [])
+        for layer in ('back', 'front'):
+            for p in props:
+                if (p[4] if len(p) > 4 and p[4] else 'front') == layer:
+                    self._prop(pet, out, p, lt)
+            if layer == 'back' and not st.get('hidden'):
+                pet.draw_self(out)
+        if st.get('text'):
+            out.append(('text', _tr(st['text'], pet.lang), pet.cx, pet.y - 8 * s, 4 * s, '#ffd23f'))
+        if st.get('fx') == 'glitch':
+            for _ in range(5):
+                out.append(('rect', pet.x + pet.rng.uniform(-4, 16) * s, pet.y + pet.rng.uniform(0, 15) * s,
+                            pet.rng.uniform(2, 10) * s, s, pet.rng.choice(['#00ffff', '#ff00ff', '#ffffff'])))
+
+    def _prop(self, pet, out, p, lt):
+        name, dx, dy, anim = p[:4]
+        s = pet.s
+        if anim == 'flicker':
+            name += str(int(lt * 8 + dx) % 2)
+        own = name.startswith('@')
+        if own:
+            name = pet.skin + name[1:]
+        w, h = SIZES[name]
+        x = pet.x + (dx if pet.facing > 0 else 16 - dx - w) * s
+        y = pet.H - h * s if dy is None else pet.y + dy * s
+        if anim == 'drop':
+            y -= max(0.0, 1 - lt / 0.4) * 50 * s
+        elif anim == 'rise':
+            y += max(0.0, 1 - lt / 0.5) * (h if dy is None else 8) * s
+        out.append(('sprite', name, x, y, own and pet.facing > 0))  # a second pet faces the first
+        if len(p) > 5:
+            out.append(('text', p[5], x + w * s / 2, y + h * s * 0.55, 3.5 * s, '#26262e'))
+
+
 class Pet:
     def __init__(self, W, H, scale=4, rng=None, random_level=1.0, lang='de', name='Mochi', poems=True,
                  species='cat', breed=''):
@@ -544,6 +726,8 @@ def make_action(spec, pet, user=''):
         return GigaChad(poem=pet.poems, lang=pet.lang)
     if t == 'cinema':
         return Cinema()
+    if t == 'meme' and spec.get('name') in MEMES:
+        return Meme(spec['name'])
     if t == 'sleep':
         a = Sleep(spec.get('dur', 8), prio=P_CHAT)
     elif t == 'jump':

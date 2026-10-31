@@ -26,13 +26,17 @@
     {"id": "hello", "patterns": ["^\\s*(hallo|hi|hey|hello|moin|servus)\\b"], "prio": 15, "chance": 0.3, "action": {"type": "emote", "frames": ["happy", "idle"], "dur": 2, "bubble": "Hallo {user}!"}},
     {"id": "love", "patterns": ["<3", "❤", "liebe", "\\blove\\b"], "prio": 15, "chance": 0.4, "action": {"type": "emote", "frames": ["happy"], "dur": 2, "bubble": "<3"}},
     {"id": "pog", "patterns": ["\\bpog", "\\bhype\\b"], "prio": 25, "chance": 0.5, "action": {"type": "jump", "bubble": "POG!"}},
-    {"id": "sus", "patterns": ["\\bsus\\b", "amogus", "side ?eye"], "prio": 25, "chance": 0.6, "action": {"type": "emote", "frames": ["blink", "idle"], "fps": 1.2, "dur": 3, "flip": true, "bubble": "sus..."}},
-    {"id": "bonk", "patterns": ["\\bbonk"], "prio": 30, "chance": 0.7, "action": {"type": "emote", "frames": ["surprised", "sit"], "fps": 2, "dur": 2, "bubble": "*BONK*"}},
-    {"id": "rip", "patterns": ["\\brip\\b"], "prio": 20, "chance": 0.5, "action": {"type": "emote", "frames": ["sleep"], "dur": 3, "bubble": "R.I.P."}},
-    {"id": "thisisfine", "patterns": ["this is fine", "alles gut"], "prio": 25, "chance": 0.6, "action": {"type": "emote", "frames": ["sit"], "dur": 3, "bubble": "This is fine."}},
-    {"id": "cook", "patterns": ["let (him|her|them) cook", "lass ihn kochen"], "prio": 25, "chance": 0.6, "action": {"type": "emote", "frames": ["walk1", "walk2"], "fps": 6, "dur": 3, "bubble": "*kocht*"}},
-    {"id": "achievement", "patterns": ["achievement", "erfolg freigeschaltet"], "prio": 25, "chance": 0.6, "action": {"type": "emote", "frames": ["happy", "jump"], "dur": 3, "bubble": "Achievement unlocked!", "confetti": 40}},
+    {"id": "sus", "patterns": ["\\bsus\\b", "amogus", "side ?eye"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "sus"}},
+    {"id": "bonk", "patterns": ["\\bbonk"], "prio": 30, "chance": 0.7, "action": {"type": "meme", "name": "bonk"}},
+    {"id": "rip", "patterns": ["\\brip\\b"], "prio": 20, "chance": 0.5, "action": {"type": "meme", "name": "rip"}},
+    {"id": "thisisfine", "patterns": ["this is fine", "alles gut"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "thisisfine"}},
+    {"id": "cook", "patterns": ["let (him|her|them) cook", "lass ihn kochen"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "cook"}},
+    {"id": "achievement", "patterns": ["achievement", "erfolg freigeschaltet"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "achievement"}},
+    {"id": "exit", "patterns": ["dramatic exit", "ich bin raus", "i'?m out", "\\bbye\\b"], "prio": 30, "chance": 0.6, "action": {"type": "meme", "name": "exit"}},
+    {"id": "cds", "patterns": ["cat distribution", "katzenverteil"], "prio": 60, "chance": 1, "cooldown": 30, "action": {"type": "meme", "name": "cds"}},
+    {"id": "party", "patterns": ["rickroll", "never gonna", "\\bparty\\b", "🎉"], "prio": 30, "chance": 0.7, "action": {"type": "meme", "name": "party"}},
+    {"id": "brainrot", "patterns": ["brainrot", "skibidi", "\\bchaos\\b", "rizz"], "prio": 30, "chance": 0.6, "action": {"type": "meme", "name": "brainrot"}},
     {"id": "scratch", "patterns": ["kratzbaum", "scratch"], "prio": 25, "chance": 0.6, "action": {"type": "emote", "frames": ["walk1", "walk2"], "fps": 8, "dur": 2.5, "bubble": "*kratz kratz*"}},
-    {"id": "scared", "patterns": ["creeper", "\\bbuh\\b", "\\bboo\\b", "jumpscare"], "prio": 30, "chance": 0.6, "action": {"type": "emote", "frames": ["surprised", "jump"], "fps": 6, "dur": 2, "bubble": "AAAH!"}}
+    {"id": "scared", "patterns": ["creeper", "\\bbuh\\b", "\\bboo\\b", "jumpscare"], "prio": 30, "chance": 0.6, "action": {"type": "meme", "name": "scare"}}
   ]
 }

@@ -195,6 +195,39 @@ class Scenes(unittest.TestCase):
                         self.assertIn(it[1], SIZES)
 
 
+class Memes(unittest.TestCase):
+    def test_every_meme_finishes_for_every_species(self):
+        from tinypaws.sprites import BREEDS
+        for sp in BREEDS:
+            for name in brain.MEMES:
+                p = brain.Pet(W, H, scale=S, rng=random.Random(3), species=sp)
+                p.x = 300
+                a = brain.Meme(name, prio=brain.P_USER)
+                p.play(a)
+                for _ in range(30 * 40):
+                    p.update(1 / 30)
+                    for it in p.render():
+                        if it[0] == 'sprite':
+                            self.assertIn(it[1], SIZES, (sp, name))
+                    if p.action is not a:
+                        break
+                else:
+                    self.fail('%s/%s never finished' % (sp, name))
+                self.assertTrue(0 <= p.x <= p.maxx and p.y == p.floor, (sp, name, p.x, p.y))
+
+    def test_exit_comes_back_home(self):
+        p = pet()
+        p.x = 700
+        a = brain.Meme('exit', prio=brain.P_USER)
+        p.play(a)
+        left = False
+        while p.action is a:
+            p.update(1 / 30)
+            left = left or p.x < 0 or p.x > p.maxx
+        self.assertTrue(left)
+        self.assertEqual(p.x, 700)
+
+
 class Chat(unittest.TestCase):
     def engine(self):
         return ChatEngine.from_file(rng=random.Random(0))
@@ -206,7 +239,9 @@ class Chat(unittest.TestCase):
         e = self.engine()
         for text, rid in [('HYPE TRAIN!!', 'hypetrain'), ('gigachad', 'gigachad'), ('GigaChat', 'gigachad'),
                           ('absolute cinema', 'cinema'), ('Wo ist meine Pizza?', 'pizza'), ('gg', 'gg'),
-                          ('LOL', 'lol'), ('F', 'f'), ('kaffee bitte', 'coffee'), ('Miau', 'meow')]:
+                          ('LOL', 'lol'), ('F', 'f'), ('kaffee bitte', 'coffee'), ('Miau', 'meow'),
+                          ('*bonk*', 'bonk'), ('this is fine', 'thisisfine'), ('cat distribution system', 'cds'),
+                          ('skibidi', 'brainrot'), ('rickroll', 'party')]:
             self.assertEqual(e.match(text)['id'], rid, text)
         self.assertIsNone(e.match('nothing to see here'))
 

@@ -10,6 +10,7 @@ Die Logik ist Qt-frei und damit portierbar (z. B. Rust/Tauri oder Browser-Overla
 | `tinypaws/props48.py` | Gegenstände mit demselben Generator (Box/Ellipse/Rad-Helfer, Schattierung je Farbe), gleiche logische Größen wie zuvor. |
 | `tinypaws/sprites.py` | Palette, Props als Zeichen-Raster, `DENSITY` (Pixel pro logischer Einheit: Katze 2, Props 1) und `SIZES` in logischen Einheiten. |
 | `tinypaws/brain.py` | Animation Engine / State Machine: `Pet`, Aktionen (`Idle`, `Walk`, `Sleep`, `Jump`, `Held`, `Emote`, `Teleport`), Szenen (`HypeTrain`, `GigaChad`, `Cinema`), Partikel, Sprechblasen, gewichteter Zufall, Event-Routing (`handle_event`), `make_action` aus JSON-Specs. Erzeugt eine Liste von Zeichen-Befehlen. |
+| `brain.MEMES` / `Meme` | Meme-Engine: jedes Meme ist eine Liste von Schritten (Dauer, Posen, Sprechblase DE/EN, Gegenstände mit Animation drop/rise/flicker, Effekte, Hüpfen, Weglaufen/Zurückkommen, Chaos). Neues Meme = neuer Eintrag. |
 | `tinypaws/reactions.py` + `.json` | Chat Reaction Engine ohne KI: Regex, Chance, Regel-/globaler Cooldown, Längenlimit, kaputte Regeln werden übersprungen. |
 | `tinypaws/settings.py` | Validierte JSON-Einstellungen (atomar geschrieben), XDG-Autostart. |
 | `tinypaws/obs.py` | OBS-Browser-Quelle: `ThreadingHTTPServer` auf 127.0.0.1, Seite + `sprites.json` + SSE-Stream der Draw-Items. |

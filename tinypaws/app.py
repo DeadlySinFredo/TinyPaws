@@ -25,7 +25,7 @@ TR = {
                scale='Pixel-Größe', fps='FPS', random='Zufallsaktivität (%)', lang='Sprache',
                autostart='Beim Login starten', screen='Monitor', poems='GigaChad-Gedichte',
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
-               scenes='Meme-Szenen', events='Stream-Events (Simulation)', chat='Chat-Simulation',
+               scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)'),
     'en': dict(panel='Test panel', settings='Settings', interact='Interaction (drag)', quit='Quit',
                walk='Walk', run='Run', jump='Jump', sleep='Sleep', sit='Sit', dance='Dance',
@@ -35,11 +35,16 @@ TR = {
                scale='Pixel size', fps='FPS', random='Random activity (%)', lang='Language',
                autostart='Start on login', screen='Monitor', poems='GigaChad poems',
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
-               scenes='Meme scenes', events='Stream events (simulated)', chat='Chat simulation',
+               scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)'),
 }
 DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 'Mausi', 'TurboTom',
               'Keksi', 'ZugFan', 'Lenny']
+
+
+MEME_NAMES = {'thisisfine': 'This is Fine', 'bonk': 'Bonk', 'cook': 'Let Him Cook', 'exit': 'Dramatic Exit',
+              'achievement': 'Achievement', 'rip': 'RIP', 'sus': 'Sus', 'cds': 'Cat Distribution',
+              'party': 'Tanz-Party', 'brainrot': 'Brainrot', 'scare': 'Schreckmoment'}
 
 
 def _platform_setup():
@@ -261,11 +266,12 @@ class Panel(QWidget):
         for title, keys in ((t('actions'), ['walk', 'run', 'jump', 'sleep', 'sit', 'dance', 'teleport',
                                             'pizza', 'coffee', 'ball']),
                             (t('scenes'), ['giga', 'cinema']),
+                            (t('memes'), ['meme:' + m for m in brain.MEMES]),
                             (t('events'), ['follow', 'sub', 'raid'])):
             box = QGroupBox(title)
             g = QGridLayout(box)
             for i, k in enumerate(keys):
-                b = QPushButton(t(k))
+                b = QPushButton(MEME_NAMES.get(k[5:], k) if k.startswith('meme:') else t(k))
                 b.clicked.connect(lambda *_, k=k: ctl.do(k))
                 g.addWidget(b, i // 4, i % 4)
             v.addWidget(box)
@@ -429,6 +435,9 @@ class TinyPaws:
 
     def do(self, k, level=3):
         p, B, U = self.pet, brain, brain.P_USER
+        if k.startswith('meme:'):
+            p.play(B.Meme(k[5:], prio=U))
+            return
         if k in ('follow', 'sub', 'raid'):
             B.handle_event(p, self.engine, {'type': k, 'user': p.rng.choice(DEMO_NAMES)})
             return
