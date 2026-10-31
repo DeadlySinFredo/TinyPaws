@@ -106,6 +106,24 @@ class Walk(Action):
         return False
 
 
+class Roam(Walk):
+    """Walk off a screen edge that has a neighbouring monitor; the app then moves the pet across."""
+
+    def __init__(self, direction, prio=None):
+        super().__init__(0, prio=prio)
+        self.direction = direction
+
+    def start(self, pet):
+        super().start(pet)
+        self.tx = -17 * pet.s if self.direction < 0 else pet.W + pet.s
+
+    def step(self, pet, dt):
+        done = super().step(pet, dt)
+        if done:
+            pet.left_by = self.direction
+        return done
+
+
 class Sleep(Action):
     def __init__(self, dur=12.0, prio=None):
         super().__init__(prio)
@@ -530,6 +548,96 @@ class Climb(Action):
             pet.draw_self(out, top=self.phase == 'lounge')
 
 
+# ---------------------------------------------------------------- several pets
+class Follow(Action):
+    """Trot after a friend for a while, keeping a little distance."""
+
+    def __init__(self, friend, dur=6.0, prio=None):
+        super().__init__(prio)
+        self.friend, self.dur = friend, dur
+
+    def step(self, pet, dt):
+        pet.y = pet.floor
+        f, s = self.friend, pet.s
+        target = pet.clampx(f.x - f.facing * 18 * s)
+        d = target - pet.x
+        v = GAITS['walk'][1] * 1.4 * s * dt
+        if abs(d) > 3 * s:
+            pet.facing = 1 if d > 0 else -1
+            pet.x += pet.facing * min(v, abs(d))
+            pet.frame = gait_frame('walk', self.t * 1.4, pet.skin)
+        else:
+            pet.facing = 1 if f.x > pet.x else -1
+            pet.frame = 'stand'
+        return self.t >= self.dur
+
+
+class _Meet(Action):
+    """Walk up to a friend, then do something together (subclasses: together())."""
+    GAP = 17
+
+    def __init__(self, friend, prio=None):
+        super().__init__(prio)
+        self.friend, self.met, self.t_met = friend, False, 0.0
+
+    def step(self, pet, dt):
+        f, s = self.friend, pet.s
+        if not self.met:
+            pet.y = pet.floor
+            side = -1 if pet.x < f.x else 1
+            target = pet.clampx(f.x + side * self.GAP * s)
+            d = target - pet.x
+            v = GAITS['walk'][1] * 1.5 * s * dt
+            if abs(d) > v and self.t < 12:
+                pet.facing = 1 if d > 0 else -1
+                pet.x += pet.facing * v
+                pet.frame = gait_frame('walk', self.t * 1.5, pet.skin)
+                return False
+            self.met, self.t_met = True, self.t
+            pet.facing = 1 if f.x > pet.x else -1
+            self.together(pet, f)
+        return self.after(pet, self.t - self.t_met)
+
+
+class NapTogether(_Meet):
+    """Lie down next to a friend; the friend joins if it is not busy with something important."""
+
+    def together(self, pet, f):
+        self.nap = pet.rng.uniform(8, 16)
+        if f.action is None or f.action.prio <= P_RANDOM:
+            f.play(Sleep(self.nap, prio=P_RANDOM))
+
+    def after(self, pet, lt):
+        pet.y, pet.frame = pet.floor, ('sleep' if lt < self.nap else 'stretch')
+        if lt < self.nap and pet.rng.random() < 0.02:
+            pet.emit(kind='text', text='z', x=pet.cx, y=pet.y + 6 * pet.s, vy=-10 * pet.s, ttl=2.0,
+                     size=4 * pet.s, color='#ffffff', g=0)
+        return lt >= self.nap + 0.8
+
+
+class PlayTogether(_Meet):
+    """Bat a ball back and forth with a friend."""
+
+    def together(self, pet, f):
+        if f.action is None or f.action.prio <= P_RANDOM:
+            f.facing = 1 if pet.x > f.x else -1
+            f.play(Emote(('happy', 'jump'), 4.0, 3, prio=P_RANDOM))
+
+    def after(self, pet, lt):
+        pet.y = pet.floor
+        pet.frame = ('jump', 'happy')[int(lt * 3) % 2]
+        return lt >= 4.0
+
+    def draw(self, pet, out):
+        pet.draw_self(out)
+        if self.met:
+            f, lt = self.friend, self.t - self.t_met
+            u = (math.sin(lt * math.pi * 1.5) + 1) / 2  # ball flies between the two
+            x = pet.cx + (f.cx - pet.cx) * u - 3.5 * pet.s
+            y = pet.floor + 16 * pet.s - 7 * pet.s - math.sin(u * math.pi) * 14 * pet.s
+            out.append(('sprite', 'ball', x, y, False))
+
+
 def _tr(v, lang):
     """Bilingual text: (de, en) tuple or plain string."""
     return (v[0] if lang == 'de' else v[1]) if isinstance(v, tuple) else v
@@ -800,6 +908,8 @@ class Pet:
         self.facing, self.frame = 1, 'idle'
         self.action, self.queue, self.particles = None, [], []
         self.bubble, self.held, self.ledges = None, False, []
+        self.exits, self.left_by = (), 0  # screen edges with a neighbouring monitor (-1/1); edge just walked off
+        self.friends = []  # other pets on the same screen
 
     floor = property(lambda self: self.H - 16 * self.s)
     maxx = property(lambda self: self.W - 16 * self.s)
@@ -857,6 +967,12 @@ class Pet:
         ] + [(w * L, lambda n=n: Meme(n, prio=U)) for n, w, only in LIFE if not only or self.species in only]
         if self.ledges:
             table.append((0.9 * L, lambda: Climb(r.choice(self.ledges)[0])))
+        if self.friends:
+            table += [(0.6 * L, lambda: Follow(r.choice(self.friends), r.uniform(4, 9))),
+                      (0.25 * L, lambda: NapTogether(r.choice(self.friends))),
+                      (0.35 * L, lambda: PlayTogether(r.choice(self.friends)))]
+        for d in self.exits:  # wander over to the next monitor
+            table.append((0.6 * L, lambda d=d: Roam(d)))
         pick = r.uniform(0, sum(w for w, _ in table))
         for w, make in table:
             pick -= w
