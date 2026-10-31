@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 MAX_COMPANIONS = 3  # plus the main pet: keeps CPU/RAM bounded
-DEFAULTS = dict(name='Mochi', animal='cat', breed='', pack='', scale=6, fps=30, random_level=1.0, lang='de',
+DEFAULTS = dict(name='Mochi', animal='cat', breed='', pack='', scale=6, auto_scale=False, fps=30, random_level=1.0, lang='de',
                 autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', twitch_client_id='', climb=True, roam=False, sound=False, volume=30, companions=(), first_run_done=False)
 
 
