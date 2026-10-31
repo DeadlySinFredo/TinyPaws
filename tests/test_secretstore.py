@@ -12,8 +12,9 @@ APP = QCoreApplication.instance() or QCoreApplication([])
 
 from tinypaws import eventsub, secretstore  # noqa: E402
 
-# the real round trip writes to the OS store: always in CI (throw-away runners), locally only on request
-LIVE = os.environ.get('CI') == 'true' or os.environ.get('TINYPAWS_KEYRING_TEST') == '1'
+# the real round trip writes to the OS store: only on throw-away GitHub-hosted runners (or locally on
+# request) – never on self-hosted runners, which are someone's real computer
+LIVE = os.environ.get('RUNNER_ENVIRONMENT') == 'github-hosted' or os.environ.get('TINYPAWS_KEYRING_TEST') == '1'
 
 
 @unittest.skipUnless(LIVE, 'set TINYPAWS_KEYRING_TEST=1 to touch the real credential store')
