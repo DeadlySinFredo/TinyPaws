@@ -90,10 +90,11 @@ class Management(unittest.TestCase):
 
     def test_add_toggle_remove_and_limit(self):
         c = self.c
-        for key in ('dog/husky', 'fox/red', 'bird/canary'):
+        # non-base breeds: visitors (meme 'visitor') are base breeds and would share a base breed's sprite prefix
+        for key in ('dog/husky', 'fox/arctic', 'bird/canary'):
             self.assertTrue(c.add_companion(key))
         self.assertFalse(c.add_companion('rabbit/wild'))  # limit: 3 companions
-        self.assertEqual([e['key'] for e in settings.load()['companions']], ['dog/husky', 'fox/red', 'bird/canary'])
+        self.assertEqual([e['key'] for e in settings.load()['companions']], ['dog/husky', 'fox/arctic', 'bird/canary'])
         drawn = set()
         for _ in range(60):
             c.tick()
@@ -106,7 +107,7 @@ class Management(unittest.TestCase):
             self.assertFalse(any(it[0] == 'sprite' and it[1].startswith(fox) for it in c.items))
         self.assertFalse(settings.load()['companions'][1]['enabled'])
         c.remove_companion(0)
-        self.assertEqual([e['key'] for e in c.cfg['companions']], ['fox/red', 'bird/canary'])
+        self.assertEqual([e['key'] for e in c.cfg['companions']], ['fox/arctic', 'bird/canary'])
 
     def test_obs_serves_companion_sprites(self):
         self.c.add_companion('dog/husky')
