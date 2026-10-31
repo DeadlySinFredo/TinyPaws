@@ -13,7 +13,8 @@ optdepends=('libsecret: keep the Twitch login in the system keyring'
 makedepends=('git')
 provides=('tinypaws')
 conflicts=('tinypaws')
-source=("tinypaws::git+${url}.git#branch=${TINYPAWS_BRANCH:-main}")
+# private repo / local checkout: TINYPAWS_REPO=file:///path/to/TinyPaws makepkg -si
+source=("tinypaws::git+${TINYPAWS_REPO:-${url}.git}#branch=${TINYPAWS_BRANCH:-main}")
 sha256sums=('SKIP')
 
 pkgver() {

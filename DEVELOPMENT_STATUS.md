@@ -14,6 +14,7 @@
 - Echter Gangzyklus mit Knie/Pfotenheben: Gehen (8 Frames), Galopp (6), Anschleichen (8, geduckt); Geschwindigkeit passend zur Schrittlänge (keine rutschenden Pfoten).
 - 6 Tierarten: Katze, Hund, Fuchs (buschiger Schwanz), Hase (Schlappohren nach hinten, Puschel), Drache (Hörner, Flügel schlagen beim Fliegen), Vogel (eigener Körper: hüpft, fliegt mit Flügelschlag, breitet bei GigaChad die Flügel aus). Vogel und Drache fliegen beim Rennen im Bogen durch die Luft.
 - 11 Memes über eine datengetriebene Meme-Engine (Zeitleiste aus Schritten): This is Fine (Flammen + Kaffee), Bonk (Spielzeughammer + Sterne), Let Him Cook (Kochmütze + Herd + Dampf), Dramatic Exit (Koffer, läuft weg, fällt zurück), Achievement (Pokal + Banner), RIP (Grabstein, „Nur Spaß!“), Sus, Cat Distribution System (zweites Tier aus dem Karton), Tanz-Party (Noten), Brainrot (Chaos), Schreckmoment (Geist). Alle per Testpanel und Chat auslösbar.
+- Pakete: GitHub Actions baut Linux (76 MB), Windows (48 MB), macOS arm64 (34 MB) und führt die Tests auf allen drei Systemen aus (grün). Arch-PKGBUILD lokal gebaut (Tests im check()). Lokaler PyInstaller-Build gestartet: KWin-Skript + OBS laufen. **Nicht geprüft**: die Windows-/macOS-Pakete auf echter Hardware (Fenster-Overlay, Tray, Autostart).
 - Eigene Tiere: Vorlage exportieren → umzeichnen → importieren; geprüft per Round-Trip-Test (pixelgenau), Szenen-Test mit Paket-Tier und Abwehr bösartiger ZIPs (Pfad-Tricks, falsche Felder, fehlende Dateien).
 - Twitch EventSub: Hype Train (Start → Zug-Szene mit echten Top-Unterstützern, Level-Up → Jubel, Ende → große Feier), Follows, Abos, Geschenk-Abos, Bits, Raids. Login per Device-Code. Geprüft: Mapping per Tests, Fehlerpfad gegen echte Twitch-API (ungültige Client-ID wird sauber gemeldet). **Nicht geprüft**: echter Login + echte Events (braucht deine Client-ID).
 - Fenster klettern (KDE): Tier läuft zur Fensterkante, klettert die Seite hoch (Laufzyklus um 90° gedreht), springt oben drauf, schläft mit herabhängenden Vorderpfoten und Schwanz, fährt mit, wenn das Fenster verschoben wird, fällt herunter, wenn es geschlossen/minimiert wird, und springt danach wieder runter. Nur Fenster, die kleiner als der Bildschirm und nicht verdeckt sind. Testpanel: „Fenster klettern“.
@@ -33,6 +34,8 @@
 Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes/Gegenstände, Editor, KI, Windows/macOS-Pakete, Wandern zwischen Monitoren, Sound.
 
 ## Technische Einschränkungen
+- Windows/macOS-Pakete sind unsigniert (Warnung beim ersten Start). Twitch-Token ohne `secret-tool` (Windows/macOS) nur im Speicher → nach Neustart neu verbinden. Fensterklettern nur KDE.
+- Projekt hat noch keine Lizenz (PKGBUILD: `unknown`).
 - Fensterklettern nur unter KDE Plasma: ein KWin-Skript wird zur Laufzeit geladen (keine dauerhafte KWin-Änderung) und meldet Fenstergeometrien per D-Bus; beim Beenden (auch SIGTERM) wird es entladen. Bei Bildschirmskalierung ≠ 100 % können XWayland- und KWin-Koordinaten abweichen (ungetestet).
 - Native Wayland: KWin verbietet Positionierung/„immer oben" → XWayland. Vollbild-Spiele können die Katze überdecken.
 - Fenster-Raise alle 2 s: ganz kurz kann ein neu geöffnetes Fenster über der Katze liegen.

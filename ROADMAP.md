@@ -10,4 +10,4 @@
 - [x] **Phase 8** – Meme-Engine + 11 Memes (This is Fine, Bonk, Let Him Cook, Dramatic Exit, Achievement, RIP, Sus, Cat Distribution System, Tanz-Party, Brainrot, Schreckmoment). Offen: weitere Community-Memes als JSON.
 - [~] **Phase 9** – Tierpaket-Format (ZIP + manifest.json + PNG-Spritesheet, validiert, Vorlagen-Export, Import, Auswahl) fertig · offen: grafischer Animationseditor, Sounds, eigene Memes im Paket.
 - [ ] **Phase 10** – Optionale KI (Ollama/llama.cpp/OpenAI-kompatibel/Claude), ohne Shell-Zugriff für Zuschauer.
-- [ ] **Phase 11** – Windows-/macOS-Builds (PyInstaller), Multi-Monitor-Wandern, native Wayland-Layer-Shell.
+- [~] **Phase 11** – Builds fertig: PyInstaller-Pakete für Linux/Windows/macOS per GitHub Actions (Tests laufen auf allen drei), Release bei Tag `v*`, Arch/CachyOS-PKGBUILD; Autostart pro System (XDG/Registry/LaunchAgent) · offen: Code-Signierung, Windows-Installer, Multi-Monitor-Wandern, native Wayland-Layer-Shell, Fensterklettern außerhalb KDE.

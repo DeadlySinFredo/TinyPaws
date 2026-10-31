@@ -20,6 +20,18 @@ python3 -m tinypaws --panel
 - `--panel` öffnet das Testpanel, `--reset` startet den Assistenten neu.
 - Einstellungen: `~/.config/tinypaws/settings.json`, Autostart: `~/.config/autostart/tinypaws.desktop`.
 
+## Installation
+
+| System | Weg |
+|---|---|
+| **CachyOS / Arch** | `packaging/arch/PKGBUILD`: `cd packaging/arch && TINYPAWS_REPO=file://$PWD/../.. TINYPAWS_BRANCH=dev makepkg -si` (privates Repo → lokaler Checkout). Danach im Startmenü „TinyPaws“ oder `tinypaws`. |
+| **Linux (andere)** | `TinyPaws-linux-x86_64.tar.gz` aus GitHub Actions/Releases entpacken, `TinyPaws/TinyPaws` starten. |
+| **Windows 10/11** | `TinyPaws-windows-x86_64.zip` entpacken, `TinyPaws.exe` starten. Unsigniert: SmartScreen → „Weitere Informationen“ → „Trotzdem ausführen“. |
+| **macOS (Apple Silicon)** | `TinyPaws-macos-arm64.zip` entpacken, `TinyPaws.app` per Rechtsklick → „Öffnen“ (unsigniert). Lebt im Tray, kein Dock-Symbol. |
+
+Builds entstehen automatisch bei jedem Push (GitHub Actions, Reiter „Actions“ → Artefakte);
+ein Tag `v*` erzeugt ein Release mit allen drei Paketen.
+
 ## Testpanel
 
 Alle Aktionen, die drei Meme-Szenen (**Hype Train** mit Level 1–10, **GigaChad**, **Absolute Cinema**),
