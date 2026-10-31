@@ -13,4 +13,4 @@ Status: [x] fertig · [~] teilweise · [ ] offen. Details und Nachweise: DEVELOP
 - [~] **Phase 9** – Tierpakete (Format, Vorlage, Import, Auswahl) · offen: grafischer Editor, Sounds, Memes im Paket.
 - [ ] **Phase 10** – Optionale KI (lokal/OpenAI-kompatibel), ohne Shell-Zugriff für Zuschauer.
 - [~] **Phase 11** – Builds für Linux/Windows/macOS (CI), Release v0.3.0, PKGBUILD · offen: Code-Signierung, Installer, Tests auf echter Windows-/Mac-Hardware.
-- [ ] **Phase 12** (#3) – Multi-Monitor, mehrere Tiere gleichzeitig, Wayland-Layer-Shell, Sound, Performance-Validierung.
+- [~] **Phase 12** (#3) – Performance (nur Geändertes neu zeichnen), Multi-Monitor, mehrere Tiere, Sound fertig · Wayland-Layer-Shell: Machbarkeit geprüft, Umsetzung #11.
