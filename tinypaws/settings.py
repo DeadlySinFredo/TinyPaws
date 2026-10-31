@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-DEFAULTS = dict(name='Mochi', animal='cat', breed='', scale=6, fps=30, random_level=1.0, lang='de',
+DEFAULTS = dict(name='Mochi', animal='cat', breed='', pack='', scale=6, fps=30, random_level=1.0, lang='de',
                 autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', twitch_client_id='', climb=True, first_run_done=False)
 
 
@@ -30,6 +30,7 @@ def load(path=None):
         except (TypeError, ValueError):
             cfg[k] = DEFAULTS[k]
     cfg['name'] = str(cfg['name'])[:24] or DEFAULTS['name']
+    cfg['pack'] = cfg['pack'] if isinstance(cfg['pack'], str) and re.match(r'^[a-z0-9-]{0,32}$', cfg['pack']) else ''
     cfg['twitch_client_id'] = str(cfg['twitch_client_id']).strip().lower()
     if not re.match(r'^[a-z0-9]{20,40}$', cfg['twitch_client_id']):
         cfg['twitch_client_id'] = ''

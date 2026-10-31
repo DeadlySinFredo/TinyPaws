@@ -30,6 +30,11 @@ simulierte Stream-Events (Follow/Abo/Raid) und eine Chat-Simulation – ohne Str
 Das Tier klettert ab und zu an Fenstern hoch und schläft oben drauf. Dafür lädt TinyPaws beim Start
 ein kleines KWin-Skript (nur solange die App läuft). Abschaltbar in den Einstellungen.
 
+## Eigene Tiere
+
+Tray-Menü → „Tier als Vorlage exportieren…“, Spritesheet umzeichnen, „Tierpaket importieren…“.
+Format und Regeln: [docs/PET_PACKS.md](docs/PET_PACKS.md).
+
 ## OBS
 
 Einstellungen → „OBS-Browser-Quelle" aktivieren. In OBS: Quelle **Browser**, URL `http://127.0.0.1:8737/`,

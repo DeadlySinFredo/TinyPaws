@@ -8,6 +8,6 @@
 - [x] **Phase 6** – Hype Train (Level 1–10, Waggons, Namen, Rauch, Regenbogen-Rauch, Hupe, Feier), GigaChad (Kopfdrehung, Strahlen, Pose, eigene Gedichte DE/EN), Absolute Cinema (Sessel, Spotlight, Filmstreifen, Popcorn).
 - [x] **Phase 7** – OBS-Browser-Quelle: lokaler HTTP-Server (nur 127.0.0.1) + SSE, Canvas-Renderer der gleichen Draw-Items, transparent, skalierbar. Offen: eigene Welt-Größe/mehrere Tiere nur für OBS.
 - [x] **Phase 8** – Meme-Engine + 11 Memes (This is Fine, Bonk, Let Him Cook, Dramatic Exit, Achievement, RIP, Sus, Cat Distribution System, Tanz-Party, Brainrot, Schreckmoment). Offen: weitere Community-Memes als JSON.
-- [ ] **Phase 9** – Tierpaket-Format (ZIP + JSON-Manifest + PNG-Spritesheets, validiert) und Editor.
+- [~] **Phase 9** – Tierpaket-Format (ZIP + manifest.json + PNG-Spritesheet, validiert, Vorlagen-Export, Import, Auswahl) fertig · offen: grafischer Animationseditor, Sounds, eigene Memes im Paket.
 - [ ] **Phase 10** – Optionale KI (Ollama/llama.cpp/OpenAI-kompatibel/Claude), ohne Shell-Zugriff für Zuschauer.
 - [ ] **Phase 11** – Windows-/macOS-Builds (PyInstaller), Multi-Monitor-Wandern, native Wayland-Layer-Shell.

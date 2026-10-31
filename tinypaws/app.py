@@ -10,10 +10,11 @@ import os
 import signal
 import sys
 import time
+from pathlib import Path
 
 from . import brain, settings
 from .obs import ObsServer
-from . import kwin
+from . import kwin, packs
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
 from .eventsub import TwitchEventSub, valid_client_id
@@ -32,7 +33,9 @@ TR = {
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
                climbnow='Fenster klettern', clientid='Twitch Client-ID (Hype Train, Follows)',
                tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden',
-               tw_code='Öffne {url} und gib diesen Code ein:'),
+               tw_code='Öffne {url} und gib diesen Code ein:', pack_import='Tierpaket importieren…',
+               pack_export='Tier als Vorlage exportieren…',
+               pack_ok='Paket „{0}“ installiert. Auswahl unter Einstellungen → Tier.'),
     'en': dict(panel='Test panel', settings='Settings', interact='Interaction (drag)', quit='Quit',
                walk='Walk', run='Run', jump='Jump', sleep='Sleep', sit='Sit', dance='Dance',
                teleport='Teleport', pizza='Pizza', coffee='Coffee', ball='Ball', hype='Hype Train',
@@ -45,8 +48,11 @@ TR = {
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
                climbnow='Climb window', clientid='Twitch Client ID (Hype Train, follows)',
                tw_login='Connect Twitch', tw_logout='Disconnect Twitch',
-               tw_code='Open {url} and enter this code:'),
+               tw_code='Open {url} and enter this code:', pack_import='Import pet pack…',
+               pack_export='Export pet as template…',
+               pack_ok='Pack “{0}” installed. Pick it in Settings → Animal.'),
 }
+INSTALLED = {}  # pet packs: id -> (name, base species), filled at startup
 DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 'Mausi', 'TurboTom',
               'Keksi', 'ZugFan', 'Lenny']
 
@@ -69,7 +75,7 @@ from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, QUrl  # noqa: E402
 from PySide6.QtGui import (QColor, QCursor, QDesktopServices, QFont, QFontMetricsF, QGuiApplication, QIcon, QImage,  # noqa: E402
                            QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QPolygonF, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,  # noqa: E402
-                               QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMenu,
+                               QFileDialog, QFormLayout, QMessageBox, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMenu,
                                QPushButton, QSpinBox, QSystemTrayIcon, QVBoxLayout, QWidget)
 
 
@@ -238,7 +244,10 @@ class SettingsDialog(QDialog):
                           ('dragon', 'Drache'), ('bird', 'Vogel')):
             for br, (name, _) in BREEDS[sp].items():
                 self.animal.addItem('%s – %s' % (label, name), '%s/%s' % (sp, br))
-        self.animal.setCurrentIndex(max(0, self.animal.findData('%s/%s' % (cfg['animal'], cfg['breed']))))
+        for pid, (name, base) in INSTALLED.items():
+            self.animal.addItem('Paket – %s' % name, 'pack/%s' % pid)
+        cur = 'pack/%s' % cfg['pack'] if cfg['pack'] in INSTALLED else '%s/%s' % (cfg['animal'], cfg['breed'])
+        self.animal.setCurrentIndex(max(0, self.animal.findData(cur)))
         self.scale = QSpinBox(minimum=1, maximum=12, value=cfg['scale'])
         self.fps = QSpinBox(minimum=5, maximum=60, value=cfg['fps'])
         self.rand = QSpinBox(minimum=0, maximum=300, value=int(cfg['random_level'] * 100))
@@ -269,7 +278,10 @@ class SettingsDialog(QDialog):
 
     def result_cfg(self):
         animal, breed = self.animal.currentData().split('/')
-        return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed,
+        pack = ''
+        if animal == 'pack':
+            pack, animal, breed = breed, INSTALLED[breed][1], self.cfg['breed']
+        return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed, pack=pack,
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
                     autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(),
@@ -341,6 +353,9 @@ class TinyPaws:
         self.pet = brain.Pet(self.geo.width(), self.geo.height(), scale=s, random_level=cfg['random_level'],
                              lang=cfg['lang'], name=cfg['name'], poems=cfg['poems'], species=cfg['animal'],
                              breed=cfg['breed'])
+        if cfg['pack'] in INSTALLED:
+            self.pet.skin = 'pack/%s:' % cfg['pack']
+        self.skin = self.pet.skin
         if cfg['x'] is not None:
             self.pet.x = self.pet.clampx(cfg['x'])
         self.engine = ChatEngine.from_file()
@@ -356,7 +371,7 @@ class TinyPaws:
         self.panel, self.obs = None, None
         if cfg['obs']:
             try:
-                self.obs = ObsServer(cfg['obs_port'], cfg['fps'], skin(cfg['animal'], cfg['breed']))
+                self.obs = ObsServer(cfg['obs_port'], cfg['fps'], self.skin)
             except OSError as e:  # port taken: desktop pet still works
                 print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
         self.kwin, self.win_seen = None, None
@@ -394,11 +409,13 @@ class TinyPaws:
         if self.es:
             m.addAction(self.t('tw_login'), self.es.login)
             m.addAction(self.t('tw_logout'), self.es.logout)
+        m.addAction(self.t('pack_import'), self.import_pack)
+        m.addAction(self.t('pack_export'), self.export_pack)
         m.addAction(self.t('settings'), self.open_settings)
         m.addSeparator()
         m.addAction(self.t('quit'), self.quit)
         self.menu = m
-        self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap(skin(self.cfg['animal'], self.cfg['breed']) + 'idle')))
+        self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap(self.skin + 'idle')))
         tip = 'TinyPaws – %s' % self.cfg['name']
         if self.cfg['twitch_channel']:
             tip += '\nTwitch: #%s' % self.cfg['twitch_channel']
@@ -509,6 +526,24 @@ class TinyPaws:
         }[k]
         p.play(make())
 
+    # ---------------------------------------------------------------- pet packs
+    def import_pack(self):
+        path, _ = QFileDialog.getOpenFileName(None, self.t('pack_import'), str(Path.home()), 'TinyPaws (*.zip)')
+        if not path:
+            return
+        try:
+            pid = packs.import_pack(path)
+            INSTALLED.update(packs.load_packs())
+            QMessageBox.information(None, 'TinyPaws', self.t('pack_ok').format(INSTALLED[pid][0]))
+        except (OSError, packs.PackError) as e:
+            QMessageBox.warning(None, 'TinyPaws', str(e))
+
+    def export_pack(self):
+        path, _ = QFileDialog.getSaveFileName(None, self.t('pack_export'), str(Path.home() / 'TinyPaws-Vorlage.zip'),
+                                              'TinyPaws (*.zip)')
+        if path:
+            packs.export_pack(self.skin, path, 'mein-tier', 'Mein Tier', self.cfg['animal'])
+
     # ---------------------------------------------------------------- twitch login
     def show_code(self, code, url):
         """Device-code login: the user confirms on twitch.tv; TinyPaws never handles the password."""
@@ -580,6 +615,7 @@ def main(argv=None):
     app = QApplication(sys.argv[:1])
     app.setApplicationName('TinyPaws')
     app.setQuitOnLastWindowClosed(False)
+    INSTALLED.update(packs.load_packs())
     cfg = settings.load() if not args.reset else dict(settings.DEFAULTS)
     if not cfg['first_run_done']:
         d = SettingsDialog(cfg, first_run=True)

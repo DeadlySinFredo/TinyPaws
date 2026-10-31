@@ -49,7 +49,8 @@ class ObsServer:
         self.fps, self.frame, self.seq = fps, '{"w":1,"h":1,"s":1,"items":[]}', 0
         self.cond = threading.Condition()
         # only props + the active pet's frames: all species/breeds would be ~9 MB
-        sprites = {k: v for k, v in SPRITES.items() if (k.startswith(skin) if k in FRAMES else ':' not in k)}
+        pet = lambda k: k in FRAMES or k.startswith('pack/')  # noqa: E731
+        sprites = {k: v for k, v in SPRITES.items() if (k.startswith(skin) if pet(k) else ':' not in k)}
         if not skin:
             sprites = {k: v for k, v in sprites.items() if ':' not in k}
         assets = json.dumps({'sprites': sprites, 'palette': PALETTE, 'density': DENSITY}).encode()
