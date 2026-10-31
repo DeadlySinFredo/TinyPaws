@@ -27,6 +27,7 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 | Twitch-Chat (anonym, IRC) | live (öffentliche Kanäle) |
 | Twitch-Login (Device-Code) + EventSub-Abos | live (Konto verbunden, Abos ohne Fehler) |
 | Reaktion auf echte Follow/Abo/Bits/Raid/Hype-Train-Events | Test (Mapping); **offen:** echte Events |
+| Twitch-Token im System-Schlüsselbund: Linux Secret Service, macOS Schlüsselbund, Windows Anmeldeinformationsverwaltung; Abmelden/Refresh/Widerruf | Test (Lebenszyklus), echte Ablage in CI auf Windows/macOS |
 | Chat-Regeln: 45 Regex-Regeln in `reactions.json`, Cooldowns, Spam-Schutz | Test |
 
 ## Builds
@@ -58,7 +59,7 @@ EventSub-Mapping, OBS (inkl. Tierwechsel/Reconnect), Live-Einstellungen, Setting
   (`X11BypassWindowManagerHint`, Anheben alle 2 s; ein neues Fenster kann kurz darüber liegen).
   Vollbild-Spiele können das Tier überdecken. Layer-Shell-Alternative wird in #3 geprüft.
 - Fensterklettern nur KDE; bei Bildschirmskalierung ≠ 100 % ungetestet.
-- Windows/macOS: unsigniert; Twitch-Token dort ohne `secret-tool` nur im Speicher.
+- Windows/macOS: unsigniert.
 - Besuchertiere sind immer die Grundrasse ihrer Art.
 
 ## Nächste Schritte
