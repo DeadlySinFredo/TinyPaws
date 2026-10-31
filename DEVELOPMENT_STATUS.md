@@ -13,7 +13,9 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 | 11 Memes + Hype Train, GigaChad, Absolute Cinema | Test (alle × alle Tierarten), live Stichproben |
 | Fenster klettern + oben schlafen (KDE, Laufzeit-KWin-Skript) | live bestätigt |
 | Startfenster (Twitch/OBS-Knöpfe, Tierwahl, Status), Einzelinstanz, Tray, App-Icon | live |
+| Töne (optional, Standard **aus**, Lautstärke 0–100 %): selbst synthetisierte Tierstimmen je Art, Lok-Hupe, Konfetti, Bonk, Teleport; Abklingzeit gegen Flut | Test (Synthese, Ereignisse, Player, Umschalten), live: alle Töne auf echtem Audiogerät geladen/abgespielt |
 | Mehrere Tiere: bis zu 3 Begleiter (Startfenster: hinzufügen, an/aus, entfernen), eigene Griffe, laufen einander hinterher, spielen Ball, schlafen nebeneinander; Chat-Reaktionen verteilen sich, Stream-Szenen bleiben beim Haupttier; OBS zeigt alle | Test (soziale Aktionen, Verwaltung, Limit, Ziehen, OBS-Sprites); Messung live |
+| Bildschirm-Anpassung (#17): Overlay wird dem Zielmonitor zugeordnet (vorher auf alte Monitorgröße gekappt), Pixelart scharf in Geräteauflösung bei 125 %/200 %, optionale Auto-Größe (~1/15 der nutzbaren Höhe, manuelle Größe bleibt), Position proportional bei Monitor-/Auflösungswechsel, negative Monitor-Koordinaten | Test mit 3 simulierten Monitoren (1920×1080 100 %, 2560×1440 200 %, 3440×1440 125 % links/oben versetzt) auf Qt 6.9.1 und 6.12; live 3440×1440 100 %; **offen:** echte gemischte DPI/Hochformat |
 | Mehrere Monitore: optional zwischen benachbarten Monitoren wandern; an-/abgesteckte Monitore, Auflösungs-/Dock-Änderungen werden übernommen | Test (simulierte 2 Monitore, unterschiedliche Größe/DPI); **offen:** echter Mehrmonitor-Desktop |
 | Einstellungen wirken sofort, ohne Neustart | Test (6 Fälle), Startfenster-Status live |
 | Tierpakete (Vorlage exportieren, importieren, auswählen) | Test (pixelgenauer Round-Trip, bösartige ZIPs) |
@@ -26,6 +28,7 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 | Twitch-Chat (anonym, IRC) | live (öffentliche Kanäle) |
 | Twitch-Login (Device-Code) + EventSub-Abos | live (Konto verbunden, Abos ohne Fehler) |
 | Reaktion auf echte Follow/Abo/Bits/Raid/Hype-Train-Events | Test (Mapping); **offen:** echte Events |
+| Twitch-Token im System-Schlüsselbund: Linux Secret Service, macOS Schlüsselbund, Windows Anmeldeinformationsverwaltung; Abmelden/Refresh/Widerruf | Test (Lebenszyklus), echte Ablage in CI auf Windows/macOS |
 | Chat-Regeln: 45 Regex-Regeln in `reactions.json`, Cooldowns, Spam-Schutz | Test |
 
 ## Builds
@@ -57,7 +60,7 @@ EventSub-Mapping, OBS (inkl. Tierwechsel/Reconnect), Live-Einstellungen, Setting
   (`X11BypassWindowManagerHint`, Anheben alle 2 s; ein neues Fenster kann kurz darüber liegen).
   Vollbild-Spiele können das Tier überdecken. Layer-Shell-Alternative wird in #3 geprüft.
 - Fensterklettern nur KDE; bei Bildschirmskalierung ≠ 100 % ungetestet.
-- Windows/macOS: unsigniert; Twitch-Token dort ohne `secret-tool` nur im Speicher.
+- Windows/macOS: unsigniert.
 - Besuchertiere sind immer die Grundrasse ihrer Art.
 
 ## Nächste Schritte

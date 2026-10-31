@@ -27,12 +27,12 @@ TR = {
                teleport='Teleport', pizza='Pizza', coffee='Kaffee', ball='Ball', hype='Hype Train',
                giga='GigaChad', cinema='Absolute Cinema', follow='Follow', sub='Abo', raid='Raid',
                send='Chat senden', force='Cooldown/Zufall ignorieren', level='Level', name='Name',
-               scale='Pixel-Größe', fps='FPS', random='Zufallsaktivität (%)', lang='Sprache',
+               scale='Pixel-Größe', auto_scale='Größe automatisch an Bildschirm anpassen', fps='FPS', random='Zufallsaktivität (%)', lang='Sprache',
                autostart='Beim Login starten', screen='Monitor', poems='GigaChad-Gedichte',
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
-               climbnow='Fenster klettern', roam='Zwischen Monitoren wandern', clientid='Twitch Client-ID (Hype Train, Follows)',
+               climbnow='Fenster klettern', roam='Zwischen Monitoren wandern', sound='Töne (leise, optional)', volume='Lautstärke (%)', clientid='Twitch Client-ID (Hype Train, Follows)',
                tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren', obs_btn='In OBS einbinden',
                obs_port_busy='OBS-Quelle aus: Port {0} ist belegt ({1}). Anderen Port in den Einstellungen wählen.',
                st_pet='Tier: {0}', st_obs_on='OBS: aktiv – {0} ({1} Quelle(n) verbunden)', st_obs_off='OBS: aus',
@@ -52,12 +52,12 @@ TR = {
                teleport='Teleport', pizza='Pizza', coffee='Coffee', ball='Ball', hype='Hype Train',
                giga='GigaChad', cinema='Absolute Cinema', follow='Follow', sub='Sub', raid='Raid',
                send='Send chat', force='Ignore cooldown/chance', level='Level', name='Name',
-               scale='Pixel size', fps='FPS', random='Random activity (%)', lang='Language',
+               scale='Pixel size', auto_scale='Fit size to the screen automatically', fps='FPS', random='Random activity (%)', lang='Language',
                autostart='Start on login', screen='Monitor', poems='GigaChad poems',
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
-               climbnow='Climb window', roam='Wander between monitors', clientid='Twitch Client ID (Hype Train, follows)',
+               climbnow='Climb window', roam='Wander between monitors', sound='Sounds (quiet, optional)', volume='Volume (%)', clientid='Twitch Client ID (Hype Train, follows)',
                tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link', obs_btn='Add to OBS',
                obs_port_busy='OBS source off: port {0} is busy ({1}). Pick another port in settings.',
                st_pet='Pet: {0}', st_obs_on='OBS: on – {0} ({1} source(s) connected)', st_obs_off='OBS: off',
@@ -114,8 +114,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDia
 
 
 class Renderer:
-    def __init__(self, scale):
-        self.s, self.cache = scale, {}
+    def __init__(self, scale, dpr=1.0):
+        self.s, self.dpr, self.cache = scale, dpr, {}  # dpr: monitor device pixel ratio (125 %, 200 % ...)
 
     def pixmap(self, name, flip=False):
         pm = self.cache.get((name, flip))
@@ -127,12 +127,14 @@ class Renderer:
                 for x, c in enumerate(row):
                     if c != '.':
                         img.setPixelColor(x, y, QColor(PALETTE[c]))
-            f = self.s / DENSITY.get(name, 1)
+            # scale straight to device pixels (nearest neighbour) so pixel art stays crisp on HiDPI
+            f = self.s / DENSITY.get(name, 1) * self.dpr
             img = img.scaled(round(img.width() * f), round(img.height() * f), Qt.IgnoreAspectRatio,
                              Qt.FastTransformation)
-            pm = QPixmap.fromImage(img)
             if flip:
-                pm = pm.transformed(QTransform().scale(-1, 1))
+                img = img.flipped(Qt.Horizontal) if hasattr(img, 'flipped') else img.mirrored(True, False)
+            pm = QPixmap.fromImage(img)
+            pm.setDevicePixelRatio(self.dpr)
             self.cache[(name, flip)] = pm
         return pm
 
@@ -143,7 +145,7 @@ class Renderer:
             k = it[0]
             if k == 'sprite':
                 pm = self.pixmap(it[1], it[4])
-                w, h = pm.width(), pm.height()
+                w, h = round(pm.width() / self.dpr), round(pm.height() / self.dpr)
                 if len(it) > 5 and it[5]:  # rotated around its centre
                     d = max(w, h)
                     out.append(QRect(int(it[2] + w / 2 - d / 2), int(it[3] + h / 2 - d / 2), d, d))
@@ -174,10 +176,11 @@ class Renderer:
             if k == 'sprite':
                 pm = self.pixmap(it[1], it[4])
                 if len(it) > 5 and it[5]:
+                    w, h = pm.width() / self.dpr, pm.height() / self.dpr
                     p.save()
-                    p.translate(it[2] + pm.width() / 2, it[3] + pm.height() / 2)
+                    p.translate(it[2] + w / 2, it[3] + h / 2)
                     p.rotate(it[5])
-                    p.drawPixmap(-pm.width() // 2, -pm.height() // 2, pm)
+                    p.drawPixmap(QPointF(-w / 2, -h / 2), pm)
                     p.restore()
                 else:
                     p.drawPixmap(int(it[2]), int(it[3]), pm)
@@ -313,6 +316,7 @@ class SettingsDialog(QDialog):
         cur = 'pack/%s' % cfg['pack'] if cfg['pack'] in INSTALLED else '%s/%s' % (cfg['animal'], cfg['breed'])
         self.animal.setCurrentIndex(max(0, self.animal.findData(cur)))
         self.scale = QSpinBox(minimum=1, maximum=12, value=cfg['scale'])
+        self.auto_scale = QCheckBox(checked=cfg['auto_scale'])
         self.fps = QSpinBox(minimum=5, maximum=60, value=cfg['fps'])
         self.rand = QSpinBox(minimum=0, maximum=300, value=int(cfg['random_level'] * 100))
         self.lang = QComboBox()
@@ -327,14 +331,17 @@ class SettingsDialog(QDialog):
         self.poems = QCheckBox(checked=cfg['poems'])
         self.climb = QCheckBox(checked=cfg['climb'])
         self.roam = QCheckBox(checked=cfg['roam'])
+        self.sound = QCheckBox(checked=cfg['sound'])
+        self.volume = QSpinBox(minimum=0, maximum=100, value=cfg['volume'])
         self.clientid = secret_edit(cfg['twitch_client_id'])
         self.clientid.setPlaceholderText('dev.twitch.tv → Anwendung (öffentlich)')
         self.twitch = QLineEdit(cfg['twitch_channel'])
         self.twitch.setPlaceholderText('z.B. papaplatte')
         self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
-        for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
+        for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('auto_scale', self.auto_scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb), ('roam', self.roam)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb), ('roam', self.roam), ('sound', self.sound),
+                     ('volume', self.volume)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -347,9 +354,10 @@ class SettingsDialog(QDialog):
         if animal == 'pack':
             pack, animal, breed = breed, INSTALLED[breed][1], self.cfg['breed']
         return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed, pack=pack,
-                    scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
+                    scale=self.scale.value(), auto_scale=self.auto_scale.isChecked(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
-                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(), roam=self.roam.isChecked(),
+                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(), roam=self.roam.isChecked(), sound=self.sound.isChecked(),
+                    volume=self.volume.value(),
                     twitch_channel=self.twitch.text().strip().lstrip('#').lower(),
                     twitch_client_id=self.clientid.text().strip().lower(),
                     first_run_done=True)
@@ -594,7 +602,8 @@ class TinyPaws:
         screens = QGuiApplication.screens()
         scr = screens[cfg['screen']] if cfg['screen'] < len(screens) else QGuiApplication.primaryScreen()
         self.geo = scr.availableGeometry()  # stay above the panel/taskbar
-        s = cfg['scale']
+        self.geo_scr = scr
+        s = self.scale = self._eff_scale(scr)
         if cfg['pack'] not in INSTALLED:
             packs.load_builtin_hd(cfg['animal'], cfg['breed'])
         self.pet = brain.Pet(self.geo.width(), self.geo.height(), scale=s, random_level=cfg['random_level'],
@@ -606,8 +615,9 @@ class TinyPaws:
         if cfg['x'] is not None:
             self.pet.x = self.pet.clampx(cfg['x'])
         self.engine = ChatEngine.from_file()
-        self.renderer = Renderer(s)
+        self.renderer = Renderer(s, scr.devicePixelRatio())
         self.overlay = Overlay(self)
+        self.overlay.setScreen(scr)
         self.overlay.setGeometry(self.geo)
         self.overlay.show()
         self.handle = Handle(self)
@@ -616,6 +626,8 @@ class TinyPaws:
             self.handle.show()
         self.drag_off, self.drag_slot, self.items, self.hpos, self.cursor_t, self.raise_t = None, 0, None, None, 0.0, 0.0
         self.companions = []
+        self.player = None
+        self._apply_sound()
         self.full_repaint = True
         self._update_exits()
         app.screenAdded.connect(self._screens_changed)
@@ -735,7 +747,7 @@ class TinyPaws:
             else:
                 self.overlay.update(dirty)
             if self.obs:
-                self.obs.publish(self.geo.width(), self.geo.height(), self.cfg['scale'], items)
+                self.obs.publish(self.geo.width(), self.geo.height(), self.scale, items)
         hp = (self.geo.x() + int(pet.x), self.geo.y() + int(pet.y))
         if hp != self.hpos and not (self.drag_off is not None and self.drag_slot == 0):
             self.hpos = hp
@@ -746,6 +758,11 @@ class TinyPaws:
                 c['hpos'] = hp
                 c['handle'].move(*hp)
         pets = [pet] + [c['pet'] for c in active]
+        for q in pets:
+            for name in q.sfx:
+                if self.player:
+                    self.player.play('voice_' + q.species if name == 'voice' else name)
+            q.sfx.clear()
         moving = any(p.frame.startswith(('walk', 'run', 'sneak')) for p in pets)  # show every in-between frame
         want = 125 if all(p.sleeping for p in pets) else 1000 // (max(60, self.cfg['fps']) if moving else self.cfg['fps'])
         if self.timer.interval() != want:
@@ -780,6 +797,20 @@ class TinyPaws:
         if self.drag_slot == 0:
             self.cfg['x'] = self.pet.x
             settings.save(self.cfg)
+
+    def _apply_sound(self):
+        """Sound is opt-in: the player (and Qt Multimedia) only exists while it is switched on."""
+        if not self.cfg['sound']:
+            self.player = None
+            return
+        try:
+            if not self.player:
+                from .sound import Player
+                self.player = Player(settings.config_dir() / 'sounds', self.cfg['volume'])
+            self.player.set_volume(self.cfg['volume'])
+        except Exception as e:  # no audio stack: the pet keeps running silently
+            print('tinypaws: sound off: %s' % e, file=sys.stderr)
+            self.player = None
 
     def poke(self, slot=0):
         pet, _ = self._slot(slot)
@@ -879,7 +910,7 @@ class TinyPaws:
             species, breed, prefix = kind, rest, skin(kind, rest)
         else:
             return None
-        p = brain.Pet(self.geo.width(), self.geo.height(), scale=self.cfg['scale'],
+        p = brain.Pet(self.geo.width(), self.geo.height(), scale=self.scale,
                       random_level=self.cfg['random_level'], lang=self.cfg['lang'], name=self.cfg['name'],
                       poems=self.cfg['poems'], species=species, breed=breed)
         p.skin = prefix
@@ -897,7 +928,7 @@ class TinyPaws:
             if p is None:
                 continue
             h = Handle(self, len(self.companions) + 1)
-            h.resize(16 * self.cfg['scale'], 16 * self.cfg['scale'])
+            h.resize(16 * self.scale, 16 * self.scale)
             self.companions.append(dict(key=e['key'], enabled=bool(e.get('enabled', True)), pet=p, handle=h, hpos=None))
             h.setVisible(self.cfg['interact'] and self.companions[-1]['enabled'])
         self.cfg['companions'] = [dict(key=c['key'], enabled=c['enabled']) for c in self.companions]
@@ -1097,7 +1128,7 @@ class TinyPaws:
             self.set_companions(cfg['companions'])
         if (cfg['animal'], cfg['breed'], cfg['pack']) != (old['animal'], old['breed'], old['pack']):
             self.set_animal('pack/%s' % cfg['pack'] if cfg['pack'] in INSTALLED else '%s/%s' % (cfg['animal'], cfg['breed']))
-        if (cfg['scale'], cfg['screen']) != (old['scale'], old['screen']):
+        if (cfg['scale'], cfg['screen'], cfg['auto_scale']) != (old['scale'], old['screen'], old['auto_scale']):
             self._apply_geometry()
             self._update_exits()
         if cfg['interact'] != old['interact']:
@@ -1119,6 +1150,8 @@ class TinyPaws:
             self.twitch = TwitchChat(cfg['twitch_channel']) if valid_channel(cfg['twitch_channel']) else None
         if cfg['roam'] != old['roam']:
             self._update_exits()
+        if (cfg['sound'], cfg['volume']) != (old['sound'], old['volume']):
+            self._apply_sound()
         if cfg['climb'] != old['climb']:
             if self.kwin:
                 self.kwin.close()
@@ -1147,12 +1180,21 @@ class TinyPaws:
         """New pet size or monitor: move the overlay and re-lay the pet out without restarting."""
         screens = QGuiApplication.screens()
         scr = screens[self.cfg['screen']] if self.cfg['screen'] < len(screens) else QGuiApplication.primaryScreen()
-        self.geo = scr.availableGeometry()
-        s, p = self.cfg['scale'], self.pet
+        old_maxx = self.pet.maxx
+        self.geo, self.geo_scr = scr.availableGeometry(), scr
+        s = self.scale = self._eff_scale(scr)
+        p = self.pet
+        # associate the windows with the target monitor first: otherwise Qt keeps them on the old
+        # screen (old size limits / device pixel ratio) and the overlay ends up too small (#17)
+        self.overlay.setScreen(scr)
+        self.handle.setScreen(scr)
+        for c in self.companions:
+            c['handle'].setScreen(scr)
         self.overlay.setGeometry(self.geo)
+        rel = p.x / old_maxx if old_maxx > 0 else 0.5  # keep the pet at the same relative spot
         p.W, p.H, p.s = self.geo.width(), self.geo.height(), s
         p.action, p.queue, p.particles = None, [], []
-        p.x, p.y = p.clampx(p.x), p.floor
+        p.x, p.y = p.clampx(rel * p.maxx), p.floor
         for c in self.companions:
             cp = c['pet']
             cp.W, cp.H, cp.s = p.W, p.H, s
@@ -1160,10 +1202,16 @@ class TinyPaws:
             cp.x, cp.y = cp.clampx(cp.x), cp.floor
             c['handle'].resize(16 * s, 16 * s)
             c['hpos'] = None
-        self.renderer = Renderer(s)
+        self.renderer = Renderer(s, scr.devicePixelRatio())
         self.handle.resize(16 * s, 16 * s)
         self.items = self.hpos = None
         self.full_repaint = True
+
+    def _eff_scale(self, scr):
+        """Pixel size: the user's manual choice, or – if 'auto size' is on – ~1/15 of the usable height."""
+        if not self.cfg['auto_scale']:
+            return self.cfg['scale']
+        return max(2, min(12, int(scr.availableGeometry().height() / 240 + 0.5)))
 
     @staticmethod
     def _screen_rects():

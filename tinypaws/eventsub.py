@@ -2,18 +2,18 @@
 
 Login: OAuth Device Code flow with the user's own public Client ID — the user
 confirms a code on twitch.tv, TinyPaws never sees a password. Tokens live only
-in the desktop secret store (Secret Service via secret-tool), never in files.
+in the OS credential store (secretstore.py), never in files.
 All networking is async on the Qt event loop.
 """
 import json
 import re
-import shutil
-import subprocess
 import sys
 
 from PySide6.QtCore import QByteArray, QObject, QTimer, QUrl, Signal
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWebSockets import QWebSocket
+
+from . import secretstore
 
 ID = 'https://id.twitch.tv/oauth2/'
 HELIX = 'https://api.twitch.tv/helix/'
@@ -67,33 +67,17 @@ def map_notification(sub_type, ev, state):
 
 
 # ---------------------------------------------------------------- token store
-_SECRET = ['service', 'tinypaws', 'account', 'twitch']
-
-
 def load_token():
-    if not shutil.which('secret-tool'):
-        return None
-    try:
-        out = subprocess.run(['secret-tool', 'lookup', *_SECRET], capture_output=True, text=True, timeout=10)
-        return json.loads(out.stdout) if out.returncode == 0 and out.stdout.strip() else None
-    except (OSError, ValueError, subprocess.TimeoutExpired):
-        return None
+    return secretstore.get_json('twitch')
 
 
 def save_token(tok):
-    """Store in the secret service; without one the token is kept in memory only (re-login next start)."""
-    if not shutil.which('secret-tool'):
-        return False
-    try:
-        return subprocess.run(['secret-tool', 'store', '--label=TinyPaws Twitch', *_SECRET],
-                              input=json.dumps(tok), text=True, timeout=10).returncode == 0
-    except (OSError, subprocess.TimeoutExpired):
-        return False
+    """Store in the OS credential store; without one the token is kept in memory only (re-login next start)."""
+    return secretstore.put_json('twitch', tok)
 
 
 def clear_token():
-    if shutil.which('secret-tool'):
-        subprocess.run(['secret-tool', 'clear', *_SECRET], timeout=10)
+    secretstore.delete('twitch')
 
 
 # ---------------------------------------------------------------- client

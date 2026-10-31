@@ -17,7 +17,9 @@ python3 -m tinypaws --panel
 - **Linke Maustaste auf der Katze**: ziehen und fallen lassen. **Doppelklick**: Miau. **Rechtsklick**: Menü.
 - Überall sonst gehen Klicks durch zu deinen Fenstern.
 - **Startfenster** (Klick aufs Tray-Symbol oder TinyPaws erneut starten): große Knöpfe **Mit Twitch verbinden** und **In OBS einbinden**, Tierauswahl, Testpanel, Einstellungen.
+- **Töne**: Einstellungen → „Töne“ (standardmäßig aus) und Lautstärke. Alle Töne sind selbst erzeugt. In OBS kommen sie über die normale Desktop-Audio-Aufnahme an; die Browserquelle selbst ist stumm.
 - **Mehrere Tiere**: im Startfenster unter „Begleiter“ bis zu 3 weitere Tiere hinzufügen, einzeln an/aus schalten oder entfernen. Sie laufen einander hinterher, spielen Ball und schlafen nebeneinander.
+- **Größe**: Einstellungen → „Pixel-Größe“ oder „Größe automatisch an Bildschirm anpassen“ (passt sich bei Monitor-/Auflösungswechsel an; aus = deine Größe bleibt). HiDPI (125–200 %) wird scharf dargestellt.
 - **Mehrere Monitore**: Einstellungen → „Zwischen Monitoren wandern“ – das Tier läuft ab und zu über die Bildschirmkante auf den Nachbarmonitor.
 - **Tier wechseln**: Tray-Menü oder Rechtsklick auf das Tier → „Tier wählen“ (sofort, ohne Neustart), oder oben im Testpanel.
 - Tray-Icon: Testpanel, Meme-Szenen, Interaktion an/aus, Einstellungen, Beenden.
@@ -75,7 +77,8 @@ Reconnect mit Backoff.
    twitch.tv/activate – dort bestätigen. Kein Passwort geht durch TinyPaws. Der Chat deines Kanals wird
    automatisch mit verbunden.
 
-Der Zugangsschlüssel liegt danach verschlüsselt im System-Schlüsselbund (Secret Service/KWallet),
+Der Zugangsschlüssel liegt danach im System-Schlüsselbund (Linux: Secret Service/KWallet, macOS: Schlüsselbund,
+Windows: Anmeldeinformationsverwaltung),
 nicht in einer Datei. Dann kommen Hype Train (Start, Level-Up, Ende), Follows, Abos, Geschenk-Abos,
 Bits und Raids über Twitch EventSub; Abmelden über das Tray-Menü.
 
