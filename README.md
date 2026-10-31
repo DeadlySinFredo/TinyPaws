@@ -25,6 +25,11 @@ python3 -m tinypaws --panel
 Alle Aktionen, die drei Meme-Szenen (**Hype Train** mit Level 1–10, **GigaChad**, **Absolute Cinema**),
 simulierte Stream-Events (Follow/Abo/Raid) und eine Chat-Simulation – ohne Streaming-Plattform.
 
+## Fenster klettern (KDE Plasma)
+
+Das Tier klettert ab und zu an Fenstern hoch und schläft oben drauf. Dafür lädt TinyPaws beim Start
+ein kleines KWin-Skript (nur solange die App läuft). Abschaltbar in den Einstellungen.
+
 ## OBS
 
 Einstellungen → „OBS-Browser-Quelle" aktivieren. In OBS: Quelle **Browser**, URL `http://127.0.0.1:8737/`,

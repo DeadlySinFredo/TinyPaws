@@ -419,6 +419,115 @@ class Cinema(Action):
             out.append(('text', self.title, cx, chair_y - 10 * s, 6 * s, '#ffffff'))
 
 
+class Climb(Action):
+    """Walk to a window's side, climb up the wall, nap on top with paws hanging over, jump down."""
+    prio = P_RANDOM
+    SPEED = 18  # logical units/s up the wall
+
+    def __init__(self, ledge_id, nap=None, prio=None):
+        super().__init__(prio)
+        self.id, self.nap, self.phase, self.t0, self.vy = ledge_id, nap, 'approach', 0.0, 0.0
+
+    def _ledge(self, pet):
+        return next((l for l in pet.ledges if l[0] == self.id), None)
+
+    def _go(self, phase):
+        self.phase, self.t0 = phase, self.t
+
+    def start(self, pet):
+        s = pet.s
+        l = self._ledge(pet)
+        if l is None:
+            self.phase = 'done'
+            return
+        _, x0, x1, top = l
+        sides = [(x0 - 16 * s, 1), (x1, -1)]  # stand just outside the left / right wall, facing it
+        sides = [sd for sd in sides if 0 <= sd[0] <= pet.maxx]
+        if not sides:
+            self.phase = 'done'
+            return
+        self.base_x, self.side = min(sides, key=lambda sd: abs(sd[0] - pet.x))
+        self.top, self.lx = top, x0
+        self.nap = self.nap if self.nap is not None else pet.rng.uniform(15, 35)
+        self.spot = pet.rng.uniform(x0 + 2 * s, max(x0 + 2 * s, x1 - 18 * s))
+
+    def step(self, pet, dt):
+        s, lt = pet.s, self.t - self.t0
+        if self.phase == 'done':
+            return True
+        l = self._ledge(pet)
+        if self.phase in ('climb', 'hop', 'walk_top', 'lounge', 'wake'):
+            if l is None:
+                self._go('down')  # window closed / minimized / covered: fall off
+            else:
+                if self.phase != 'climb':  # ride along when the window is dragged
+                    pet.x += l[1] - self.lx
+                self.top, self.lx = l[3], l[1]
+                if self.phase != 'climb' and not (l[1] - 8 * s <= pet.cx <= l[2] + 8 * s):
+                    self._go('down')
+        if self.phase == 'approach':
+            pet.y = pet.floor
+            d = self.base_x - pet.x
+            v = GAITS['walk'][1] * s * dt
+            if abs(d) <= v:
+                pet.x, pet.facing = self.base_x, self.side
+                self._go('climb')
+            else:
+                pet.facing = 1 if d > 0 else -1
+                pet.x += pet.facing * v
+                pet.frame = gait_frame('walk', self.t)
+        elif self.phase == 'climb':
+            pet.facing = self.side
+            pet.y -= self.SPEED * s * dt
+            pet.frame = gait_frame('walk', self.t * 1.3)
+            if pet.y <= self.top - 8 * s:
+                self.hop_from = pet.x
+                self._go('hop')
+        elif self.phase == 'hop':
+            u = min(1.0, lt / 0.35)
+            pet.frame = 'jump'
+            pet.x = self.hop_from + self.side * 10 * s * u
+            pet.y = self.top - 16 * s - math.sin(math.pi * u) * 4 * s
+            if u >= 1:
+                self._go('walk_top')
+        elif self.phase == 'walk_top':
+            pet.y = self.top - 16 * s
+            d = self.spot - pet.x
+            v = GAITS['walk'][1] * s * dt
+            if abs(d) <= v:
+                pet.facing = pet.rng.choice((1, -1))
+                self._go('lounge')
+            else:
+                pet.facing = 1 if d > 0 else -1
+                pet.x += pet.facing * v
+                pet.frame = gait_frame('walk', self.t)
+        elif self.phase == 'lounge':
+            pet.y, pet.frame = self.top - 16 * s, 'lounge'
+            if pet.rng.random() < dt * 0.8:
+                pet.emit(kind='text', text='z', x=pet.cx + pet.facing * 5 * s, y=pet.y + 8 * s,
+                         vx=4 * s * pet.facing, vy=-10 * s, ttl=2.0, size=4 * s, color='#ffffff', g=0)
+            if lt >= self.nap:
+                self._go('wake')
+        elif self.phase == 'wake':
+            pet.y, pet.frame = self.top - 16 * s, 'stretch'
+            if lt >= 0.8:
+                self._go('down')
+        elif self.phase == 'down':
+            self.vy += GRAVITY * s * dt
+            pet.y = min(pet.floor, pet.y + self.vy * dt)
+            pet.frame = 'jump'
+            if pet.y >= pet.floor:
+                pet.frame = 'sit'
+                return True
+        return False
+
+    def draw(self, pet, out):
+        if self.phase == 'climb':  # walk cycle turned upright: belly to the wall, head up
+            pet.draw_self(out, angle=-90 if pet.facing > 0 else 90)
+        else:
+            pet.draw_self(out, top=self.phase == 'lounge')
+
+
 def _tr(v, lang):
     """Bilingual text: (de, en) tuple or plain string."""
     return (v[0] if lang == 'de' else v[1]) if isinstance(v, tuple) else v
@@ -683,7 +792,7 @@ class Pet:
         self.x, self.y = W / 2, self.floor
         self.facing, self.frame = 1, 'idle'
         self.action, self.queue, self.particles = None, [], []
-        self.bubble, self.held = None, False
+        self.bubble, self.held, self.ledges = None, False, []
 
     floor = property(lambda self: self.H - 16 * self.s)
     maxx = property(lambda self: self.W - 16 * self.s)
@@ -739,6 +848,8 @@ class Pet:
             (0.3 * L, lambda: Emote(('sit', 'happy'), 3.5, 1.5, prop='coffee', prio=U)),
             (0.1 * L, lambda: Teleport(prio=U)),
         ] + [(w * L, lambda n=n: Meme(n, prio=U)) for n, w, only in LIFE if not only or self.species in only]
+        if self.ledges:
+            table.append((0.9 * L, lambda: Climb(r.choice(self.ledges)[0])))
         pick = r.uniform(0, sum(w for w, _ in table))
         for w, make in table:
             pick -= w
@@ -764,11 +875,26 @@ class Pet:
             self.emit(x=x, y=y, vx=math.cos(a) * v, vy=math.sin(a) * v, ttl=self.rng.uniform(1.0, 2.2),
                       w=self.s, h=self.s, color=self.rng.choice(colors))
 
-    def draw_self(self, out, frame=None):
-        name = frame or self.frame
-        name = self.skin + name
+    def draw_self(self, out, frame=None, angle=0, top=False):
+        """top=True: align the sprite's top with the box (for frames taller than 16 that hang below)."""
+        name = self.skin + (frame or self.frame)
         w, h = SIZES[name]
-        out.append(('sprite', name, self.x + (16 - w) * self.s / 2, self.y + (16 - h) * self.s, self.facing < 0))
+        y = self.y if top else self.y + (16 - h) * self.s
+        out.append(('sprite', name, self.x + (16 - w) * self.s / 2, y, self.facing < 0, angle))
+
+    def set_windows(self, windows, ox=0.0, oy=0.0):
+        """Window rects (id, x, y, w, h; bottom-to-top, screen coords) -> ledges the pet can nap on."""
+        s, out = self.s, []
+        rects = [(i, x - ox, y - oy, w, h) for i, x, y, w, h in windows]
+        for k, (wid, x, y, w, h) in enumerate(rects):
+            x0, x1 = max(0.0, x), min(float(self.W), x + w)
+            if x1 - x0 < 24 * s or not (16 * s <= y <= self.floor - 24 * s):
+                continue  # too narrow, too high (maximized) or too low to bother
+            cx = (x0 + x1) / 2
+            if any(ax <= cx <= ax + aw and ay <= y - 2 <= ay + ah for _, ax, ay, aw, ah in rects[k + 1:]):
+                continue  # top edge hidden under a window that is above it
+            out.append((wid, x0, x1, y))
+        self.ledges = out
 
     def render(self):
         out = []

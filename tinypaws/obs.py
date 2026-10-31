@@ -23,7 +23,9 @@ function font(px){g.font='bold '+Math.max(8,px|0)+'px "DejaVu Sans Mono",monospa
 function draw(f){if(c.width!=f.w||c.height!=f.h){c.width=f.w;c.height=f.h}
 if(f.s!=scale){scale=f.s;cache={}}g.clearRect(0,0,c.width,c.height);
 for(const it of f.items){const k=it[0];
-if(k=='sprite'){if(S[it[1]])g.drawImage(sprite(it[1],it[4]),it[2]|0,it[3]|0)}
+if(k=='sprite'){if(!S[it[1]])continue;const im=sprite(it[1],it[4]);
+if(it[5]){g.save();g.translate(it[2]+im.width/2,it[3]+im.height/2);g.rotate(it[5]*Math.PI/180);g.drawImage(im,-im.width/2|0,-im.height/2|0);g.restore()}
+else g.drawImage(im,it[2]|0,it[3]|0)}
 else if(k=='rect'){g.fillStyle=it[5];g.fillRect(it[1]|0,it[2]|0,it[3]|0,it[4]|0)}
 else if(k=='text'){font(it[4]);g.textAlign='center';g.lineWidth=Math.max(1,it[4]/7);g.strokeStyle='#1b1b1b';
 g.strokeText(it[1],it[2],it[3]);g.fillStyle=it[5];g.fillText(it[1],it[2],it[3])}

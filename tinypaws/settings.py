@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 DEFAULTS = dict(name='Mochi', animal='cat', breed='', scale=6, fps=30, random_level=1.0, lang='de',
-                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', first_run_done=False)
+                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', climb=True, first_run_done=False)
 
 
 def config_dir():

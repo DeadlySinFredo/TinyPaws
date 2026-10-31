@@ -7,11 +7,13 @@ only thing that receives mouse input. So clicks never get blocked except on the 
 import argparse
 import math
 import os
+import signal
 import sys
 import time
 
 from . import brain, settings
 from .obs import ObsServer
+from . import kwin
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
 from .sprites import BREEDS, DENSITY, PALETTE, SPRITES, skin
@@ -26,7 +28,8 @@ TR = {
                autostart='Beim Login starten', screen='Monitor', poems='GigaChad-Gedichte',
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
-               actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)'),
+               actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
+               climbnow='Fenster klettern'),
     'en': dict(panel='Test panel', settings='Settings', interact='Interaction (drag)', quit='Quit',
                walk='Walk', run='Run', jump='Jump', sleep='Sleep', sit='Sit', dance='Dance',
                teleport='Teleport', pizza='Pizza', coffee='Coffee', ball='Ball', hype='Hype Train',
@@ -36,7 +39,8 @@ TR = {
                autostart='Start on login', screen='Monitor', poems='GigaChad poems',
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
-               actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)'),
+               actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
+               climbnow='Climb window'),
 }
 DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 'Mausi', 'TurboTom',
               'Keksi', 'ZugFan', 'Lenny']
@@ -91,7 +95,15 @@ class Renderer:
         for it in items:
             k = it[0]
             if k == 'sprite':
-                p.drawPixmap(int(it[2]), int(it[3]), self.pixmap(it[1], it[4]))
+                pm = self.pixmap(it[1], it[4])
+                if len(it) > 5 and it[5]:
+                    p.save()
+                    p.translate(it[2] + pm.width() / 2, it[3] + pm.height() / 2)
+                    p.rotate(it[5])
+                    p.drawPixmap(-pm.width() // 2, -pm.height() // 2, pm)
+                    p.restore()
+                else:
+                    p.drawPixmap(int(it[2]), int(it[3]), pm)
             elif k == 'rect':
                 p.fillRect(QRectF(int(it[1]), int(it[2]), int(it[3]), int(it[4])), QColor(it[5]))
             elif k == 'text':
@@ -235,12 +247,13 @@ class SettingsDialog(QDialog):
         self.screen.setCurrentIndex(min(cfg['screen'], self.screen.count() - 1))
         self.autostart = QCheckBox(checked=cfg['autostart'])
         self.poems = QCheckBox(checked=cfg['poems'])
+        self.climb = QCheckBox(checked=cfg['climb'])
         self.twitch = QLineEdit(cfg['twitch_channel'])
         self.twitch.setPlaceholderText('z.B. papaplatte')
         self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
         for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('climb', self.climb)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -252,7 +265,7 @@ class SettingsDialog(QDialog):
         return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed,
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
-                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(),
+                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(),
                     twitch_channel=self.twitch.text().strip().lstrip('#').lower(),
                     first_run_done=True)
 
@@ -266,7 +279,7 @@ class Panel(QWidget):
         self.setWindowTitle('TinyPaws – ' + t('panel'))
         v = QVBoxLayout(self)
         for title, keys in ((t('actions'), ['walk', 'run', 'jump', 'sleep', 'sit', 'dance', 'teleport',
-                                            'pizza', 'coffee', 'ball']),
+                                            'pizza', 'coffee', 'ball', 'climbnow']),
                             (t('scenes'), ['giga', 'cinema']),
                             (t('memes'), ['meme:' + m for m in brain.MEMES]),
                             (t('events'), ['follow', 'sub', 'raid'])):
@@ -338,6 +351,9 @@ class TinyPaws:
                 self.obs = ObsServer(cfg['obs_port'], cfg['fps'], skin(cfg['animal'], cfg['breed']))
             except OSError as e:  # port taken: desktop pet still works
                 print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
+        self.kwin, self.win_seen = None, None
+        if cfg['climb'] and 'KDE' in os.environ.get('XDG_CURRENT_DESKTOP', ''):
+            self.kwin = kwin.KWinWindows(settings.config_dir() / 'kwin_windows.js')
         self.twitch = None
         if valid_channel(cfg['twitch_channel']):
             self.twitch = TwitchChat(cfg['twitch_channel'])
@@ -391,6 +407,9 @@ class TinyPaws:
             self.raise_t = 0
             self.overlay.raise_()
             self.handle.raise_()
+        if self.kwin and self.kwin.windows is not self.win_seen:
+            self.win_seen = self.kwin.windows
+            pet.set_windows(self.win_seen, self.geo.x(), self.geo.y())
         if self.twitch:
             for _ in range(20):  # bounded per tick; engine cooldowns decide what the pet reacts to
                 if self.twitch.events.empty():
@@ -437,6 +456,12 @@ class TinyPaws:
 
     def do(self, k, level=3):
         p, B, U = self.pet, brain, brain.P_USER
+        if k == 'climbnow':
+            if p.ledges:  # nearest window top
+                p.play(B.Climb(min(p.ledges, key=lambda l: abs((l[1] + l[2]) / 2 - p.cx))[0], prio=U))
+            else:
+                p.say('?', 1.5)
+            return
         if k.startswith('meme:'):
             p.play(B.Meme(k[5:], prio=U))
             return
@@ -487,6 +512,8 @@ class TinyPaws:
             self.obs.close()
         if self.twitch:
             self.twitch.close()
+        if self.kwin:
+            self.kwin.close()
         self.app.quit()
 
 
@@ -507,5 +534,8 @@ def main(argv=None):
         cfg['first_run_done'] = True
         settings.save(cfg)
         settings.set_autostart(cfg['autostart'])
-    _ctl = TinyPaws(app, cfg, show_panel=args.panel)  # noqa: F841 keep alive
+    ctl = TinyPaws(app, cfg, show_panel=args.panel)
+    # quit cleanly on logout/kill so the KWin script gets unloaded and settings saved
+    signal.signal(signal.SIGTERM, lambda *_: ctl.quit())
+    signal.signal(signal.SIGINT, lambda *_: ctl.quit())
     return app.exec()

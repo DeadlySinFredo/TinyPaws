@@ -133,6 +133,59 @@ class Movement(unittest.TestCase):
         self.assertEqual(p.y, p.floor)
 
 
+class Climbing(unittest.TestCase):
+    WIN = [('w1', 600, 500, 700, 400)]  # x, y, w, h in screen px
+
+    def test_ledges_filter(self):
+        p = pet()
+        p.set_windows([('max', 0, 0, W, H - 40), ('tiny', 10, 300, 40, 40),
+                       ('low', 100, H - 70, 500, 60)] + self.WIN)  # bottom-to-top stacking
+        self.assertEqual([l[0] for l in p.ledges], ['w1'])
+        p.set_windows(self.WIN + [('cover', 800, 400, 400, 300)])  # sits on top of w1's top edge centre
+        self.assertEqual([l[0] for l in p.ledges], ['cover'])
+
+    def _climb(self, nap=2):
+        p = pet()
+        p.x = 100
+        p.set_windows(self.WIN)
+        a = brain.Climb('w1', nap=nap, prio=brain.P_USER)
+        p.play(a)
+        return p, a
+
+    def test_climbs_naps_with_paws_hanging_and_jumps_down(self):
+        p, a = self._climb()
+        phases, angles = [], set()
+        for _ in range(30 * 60):
+            p.update(1 / 30)
+            for it in p.render():
+                if it[0] == 'sprite':
+                    self.assertIn(it[1], SIZES)
+                    angles.add(it[5])
+            if a.phase == 'lounge' and a.t > a.t0:
+                self.assertEqual(p.y + 16 * S, 500)  # lying on the window's top edge
+                self.assertEqual(p.frame, 'lounge')
+            if not phases or phases[-1] != a.phase:
+                phases.append(a.phase)
+            if p.action is not a:
+                break
+        self.assertEqual(phases, ['approach', 'climb', 'hop', 'walk_top', 'lounge', 'wake', 'down'])
+        self.assertIn(-90, angles)  # rotated up the wall
+        self.assertEqual(p.y, p.floor)
+
+    def test_falls_when_window_closes_and_rides_when_moved(self):
+        p, a = self._climb(nap=60)
+        while a.phase != 'lounge':
+            p.update(1 / 30)
+        x = p.x
+        p.set_windows([('w1', 650, 500, 700, 400)])  # dragged 50 px right
+        p.update(1 / 30)
+        self.assertAlmostEqual(p.x, x + 50)
+        p.set_windows([])
+        for _ in range(90):
+            p.update(1 / 30)
+        self.assertEqual(p.y, p.floor)
+
+
 class Priorities(unittest.TestCase):
     def test_scene_interrupts_and_chat_queues(self):
         p = pet()

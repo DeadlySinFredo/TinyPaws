@@ -311,6 +311,20 @@ def sleep(sp='cat'):
     return _finish(g)
 
 
+def lounge(sp='cat'):
+    """Sleeping on a window top: 16x20 logical, the ledge is at design y 32; front paws + tail hang over."""
+    g = _blank(W, 40)
+    _tail(g, [(5, 30), (3, 35), (4, 39)], sp, 1.4)
+    for x in (20.5, 24):
+        _line(g, [(x, 30), (x + 0.6, 37)], 1.4, 'O')
+        _ell(g, x + 0.8, 37.8, 1.8, 1.3, 'L')
+    _ell(g, 14.5, 28.5, 11, 4.5, 'O')
+    if sp == 'dragon':
+        _wing(g, (13, 25), -6, -4)
+    HEADS[sp][0](g, 23, 26.5, 'closed')
+    return _finish(g)
+
+
 SIDE_EYES = {'cat': (-5, 3, -2), 'dog': (-1, 4, -3), 'fox': (-3, 2, -2), 'rabbit': (-2, 3, -2), 'dragon': (-3, 2, -2)}
 
 
@@ -515,6 +529,7 @@ def bird_frames():
         'jump': _finish(_bird('fly', wing=1, hop=4)), 'stretch': _finish(_bird('fly', 'closed', wing=1)),
         'sleep': _finish(_bird(eyes='closed', hop=-2)), 'flex': _bird_flex(),
     }
+    f['lounge'] = f['sleep'] + ['.' * len(f['sleep'][0])] * int(8 * K)  # perches on the ledge, nothing hangs
     for style, n in (('walk', 16), ('sneak', 16)):  # hopping
         for i in range(n):
             u = (i / n * 2) % 1.0
@@ -537,7 +552,7 @@ def frames(sp='cat'):
             'stand': stand(sp=sp), 'stand_blink': stand(eyes='closed', sp=sp),
             'jump': jump(sp=sp), 'sit': sit(sp=sp), 'surprised': front('wide', sp=sp),
             'stretch': jump('closed', sp=sp), 'sleep': sleep(sp=sp), 'flex': flex(sp=sp),
-            'cinema': front(arms='up', sp=sp),
+            'cinema': front(arms='up', sp=sp), 'lounge': lounge(sp),
         }
         for style in ('walk', 'run', 'sneak'):
             for i in range(GAITS[style][0]):
