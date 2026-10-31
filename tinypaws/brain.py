@@ -964,6 +964,12 @@ def handle_event(pet, engine, ev, force=False):
         a = make_action(rule['action'], pet, user)
     elif kind == 'hype_train':
         a = HypeTrain(ev.get('level', 1), ev.get('names', []))
+    elif kind == 'hype_level':
+        a = Emote(('happy', 'jump'), 2.5, 6, bubble='HYPE LEVEL %d!' % ev.get('level', 2), confetti=60)
+    elif kind == 'hype_end':
+        done = {'de': 'Hype Train geschafft! Level %d', 'en': 'Hype Train done! Level %d'}
+        a = Emote(('happy', 'jump', 'walk1', 'jump'), 4.0, 6, bubble=done.get(pet.lang, done['en']) % ev.get('level', 1),
+                  confetti=150, flip=True)
     elif kind == 'follow':
         a = Emote(('happy', 'jump'), 2.5, 4, bubble='%s %s!' % (thx, user), confetti=25)
     elif kind in ('sub', 'gift_sub', 'bits', 'donation', 'superchat', 'membership', 'gift'):

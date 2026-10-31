@@ -40,8 +40,19 @@ zur Desktop-Katze. Server lauscht nur auf localhost.
 
 Einstellungen → „Twitch-Kanal (nur lesen)“ → Kanalname eintragen. Anonymer Lesezugang über Twitch-IRC,
 **kein Login, kein Token**. Erkannt: Chat, Abos/Resubs, Geschenk-Abos, Bits, Raids. Automatischer
-Reconnect mit Backoff. Hype Train braucht EventSub + OAuth (kommt später) – bis dahin über Chat
-„hype train“ oder das Testpanel.
+Reconnect mit Backoff.
+
+**Echter Hype Train + Follows (Twitch-Login, einmalig einrichten):**
+
+1. <https://dev.twitch.tv/console/apps> → „Anwendung registrieren“: Name z. B. `TinyPaws-<dein Name>`,
+   OAuth-Redirect `http://localhost`, Kategorie „Other“, Client-Typ **Öffentlich**.
+2. Die angezeigte **Client-ID** in TinyPaws → Einstellungen → „Twitch Client-ID“ eintragen.
+3. Tray-Menü → „Mit Twitch verbinden“: TinyPaws zeigt einen Code und öffnet twitch.tv/activate –
+   dort bestätigen. Kein Passwort geht durch TinyPaws.
+
+Der Zugangsschlüssel liegt danach verschlüsselt im System-Schlüsselbund (Secret Service/KWallet),
+nicht in einer Datei. Dann kommen Hype Train (Start, Level-Up, Ende), Follows, Abos, Geschenk-Abos,
+Bits und Raids über Twitch EventSub; Abmelden über das Tray-Menü.
 
 ## Chat-Reaktionen
 

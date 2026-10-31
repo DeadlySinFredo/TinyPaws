@@ -14,6 +14,7 @@
 - Echter Gangzyklus mit Knie/Pfotenheben: Gehen (8 Frames), Galopp (6), Anschleichen (8, geduckt); Geschwindigkeit passend zur Schrittlänge (keine rutschenden Pfoten).
 - 6 Tierarten: Katze, Hund, Fuchs (buschiger Schwanz), Hase (Schlappohren nach hinten, Puschel), Drache (Hörner, Flügel schlagen beim Fliegen), Vogel (eigener Körper: hüpft, fliegt mit Flügelschlag, breitet bei GigaChad die Flügel aus). Vogel und Drache fliegen beim Rennen im Bogen durch die Luft.
 - 11 Memes über eine datengetriebene Meme-Engine (Zeitleiste aus Schritten): This is Fine (Flammen + Kaffee), Bonk (Spielzeughammer + Sterne), Let Him Cook (Kochmütze + Herd + Dampf), Dramatic Exit (Koffer, läuft weg, fällt zurück), Achievement (Pokal + Banner), RIP (Grabstein, „Nur Spaß!“), Sus, Cat Distribution System (zweites Tier aus dem Karton), Tanz-Party (Noten), Brainrot (Chaos), Schreckmoment (Geist). Alle per Testpanel und Chat auslösbar.
+- Twitch EventSub: Hype Train (Start → Zug-Szene mit echten Top-Unterstützern, Level-Up → Jubel, Ende → große Feier), Follows, Abos, Geschenk-Abos, Bits, Raids. Login per Device-Code. Geprüft: Mapping per Tests, Fehlerpfad gegen echte Twitch-API (ungültige Client-ID wird sauber gemeldet). **Nicht geprüft**: echter Login + echte Events (braucht deine Client-ID).
 - Fenster klettern (KDE): Tier läuft zur Fensterkante, klettert die Seite hoch (Laufzyklus um 90° gedreht), springt oben drauf, schläft mit herabhängenden Vorderpfoten und Schwanz, fährt mit, wenn das Fenster verschoben wird, fällt herunter, wenn es geschlossen/minimiert wird, und springt danach wieder runter. Nur Fenster, die kleiner als der Bildschirm und nicht verdeckt sind. Testpanel: „Fenster klettern“.
 - Eigenleben: Kratzbaum (nur Katze), Kissen-Nickerchen, Bett mit Decke, Fernsehen mit Popcorn, im Karton sitzen, Wollknäuel, Mausjagd, Knochen (nur Hund), Besuch von einem anderen Tier; das Tier macht das (und seltene Memes) zufällig von selbst, gewichtet nach Zufallsaktivität und passend zur Tierart. Auch per Chat/Testpanel.
 - Gegenstände im gleichen detaillierten Stil (48er-Raster, Schattierung): Lok mit Speichenrädern, Kuppelstange, Laterne; Waggons mit Namensschild; Kinosessel mit Knöpfen; Pizza, Kaffeetasse mit Herz und Dampf, Popcorn, Banane, Ball.
@@ -23,7 +24,7 @@
 - Gemessen: ~2 % CPU (30 FPS, 1 Kern), ~120 MB RSS; im Schlaf 8 FPS.
 
 ## Getestet
-- `python3 -m unittest discover -s tests -t .` – 38 Tests (inkl. Klettern: Fensterfilter, kompletter Ablauf, Mitfahren, Herunterfallen, jedes Meme mit jeder Tierart, alle Tierarten/Rassen in allen Szenen, Fliegen, Gangarten, Hund in allen Szenen, OBS-Server und Twitch-Parser/Validierung): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
+- `python3 -m unittest discover -s tests -t .` – 41 Tests (inkl. EventSub-Mapping, Klettern: Fensterfilter, kompletter Ablauf, Mitfahren, Herunterfallen, jedes Meme mit jeder Tierart, alle Tierarten/Rassen in allen Szenen, Fliegen, Gangarten, Hund in allen Szenen, OBS-Server und Twitch-Parser/Validierung): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
 - `scripts/render_preview.py` rendert Szenen offscreen als PNG (visuell geprüft).
 - Live-Start + Screenshot auf dem Desktop.
 
@@ -37,4 +38,4 @@ Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes
 - Settings-Änderung startet den Prozess neu.
 
 ## Nächste Schritte
-1. Twitch EventSub (Hype Train/Follows). 2. Fenster klettern für GNOME/Windows/macOS; Twitch EventSub. 3. Mehr Memes.
+1. Twitch EventSub (Hype Train/Follows). 2. Twitch-Login mit echter Client-ID live testen; Fenster klettern für GNOME/Windows/macOS. 3. Mehr Memes.

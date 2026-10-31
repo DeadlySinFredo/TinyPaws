@@ -15,6 +15,7 @@ Die Logik ist Qt-frei und damit portierbar (z. B. Rust/Tauri oder Browser-Overla
 | `tinypaws/settings.py` | Validierte JSON-Einstellungen (atomar geschrieben), XDG-Autostart. |
 | `tinypaws/obs.py` | OBS-Browser-Quelle: `ThreadingHTTPServer` auf 127.0.0.1, Seite + `sprites.json` + SSE-Stream der Draw-Items. |
 | `tinypaws/twitch.py` | Anonymer Twitch-IRC-Client (TLS, `justinfan`), Parser → einheitliche Events, Reconnect mit Backoff, Queue max. 200; Kanalname wird validiert (kein IRC-Injection). |
+| `tinypaws/eventsub.py` | Twitch EventSub per QWebSocket, Login per OAuth Device Code (öffentliche Client-ID des Nutzers), Token nur via `secret-tool` (Secret Service), Refresh, Keepalive-Watchdog, Reconnect mit Backoff, `session_reconnect` nur zu Twitch-Hosts. `map_notification` übersetzt in TinyPaws-Events. Bei aktivem EventSub ignoriert die App Abo/Bits/Raid aus IRC (keine Doppelreaktion). |
 | `tinypaws/kwin.py` | Lädt zur Laufzeit ein KWin-Skript, das alle 0,4 s die normalen Fenster (Stapelreihenfolge) per D-Bus an `org.tinypaws.TinyPaws` meldet; JSON wird validiert. `Pet.set_windows` macht daraus „Kanten“ (nicht zu schmal, nicht maximiert, nicht verdeckt); `Climb` nutzt sie. |
 | `tinypaws/app.py` | Qt-Frontend: Renderer, Overlay, Handle, Tray, Testpanel, Einrichtungsassistent, DE/EN. |
 

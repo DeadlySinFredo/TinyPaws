@@ -16,6 +16,7 @@ from .obs import ObsServer
 from . import kwin
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
+from .eventsub import TwitchEventSub, valid_client_id
 from .sprites import BREEDS, DENSITY, PALETTE, SPRITES, skin
 
 TR = {
@@ -29,7 +30,9 @@ TR = {
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
-               climbnow='Fenster klettern'),
+               climbnow='Fenster klettern', clientid='Twitch Client-ID (Hype Train, Follows)',
+               tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden',
+               tw_code='Öffne {url} und gib diesen Code ein:'),
     'en': dict(panel='Test panel', settings='Settings', interact='Interaction (drag)', quit='Quit',
                walk='Walk', run='Run', jump='Jump', sleep='Sleep', sit='Sit', dance='Dance',
                teleport='Teleport', pizza='Pizza', coffee='Coffee', ball='Ball', hype='Hype Train',
@@ -40,7 +43,9 @@ TR = {
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
-               climbnow='Climb window'),
+               climbnow='Climb window', clientid='Twitch Client ID (Hype Train, follows)',
+               tw_login='Connect Twitch', tw_logout='Disconnect Twitch',
+               tw_code='Open {url} and enter this code:'),
 }
 DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 'Mausi', 'TurboTom',
               'Keksi', 'ZugFan', 'Lenny']
@@ -60,8 +65,8 @@ def _platform_setup():
         os.environ['QT_QPA_PLATFORM'] = 'xcb'
 
 
-from PySide6.QtCore import QPointF, QRectF, Qt, QTimer  # noqa: E402
-from PySide6.QtGui import (QColor, QCursor, QFont, QFontMetricsF, QGuiApplication, QIcon, QImage,  # noqa: E402
+from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, QUrl  # noqa: E402
+from PySide6.QtGui import (QColor, QCursor, QDesktopServices, QFont, QFontMetricsF, QGuiApplication, QIcon, QImage,  # noqa: E402
                            QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QPolygonF, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,  # noqa: E402
                                QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMenu,
@@ -248,12 +253,14 @@ class SettingsDialog(QDialog):
         self.autostart = QCheckBox(checked=cfg['autostart'])
         self.poems = QCheckBox(checked=cfg['poems'])
         self.climb = QCheckBox(checked=cfg['climb'])
+        self.clientid = QLineEdit(cfg['twitch_client_id'])
+        self.clientid.setPlaceholderText('dev.twitch.tv → Anwendung (öffentlich)')
         self.twitch = QLineEdit(cfg['twitch_channel'])
         self.twitch.setPlaceholderText('z.B. papaplatte')
         self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
         for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('climb', self.climb)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -267,6 +274,7 @@ class SettingsDialog(QDialog):
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
                     autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(),
                     twitch_channel=self.twitch.text().strip().lstrip('#').lower(),
+                    twitch_client_id=self.clientid.text().strip().lower(),
                     first_run_done=True)
 
 
@@ -354,6 +362,12 @@ class TinyPaws:
         self.kwin, self.win_seen = None, None
         if cfg['climb'] and 'KDE' in os.environ.get('XDG_CURRENT_DESKTOP', ''):
             self.kwin = kwin.KWinWindows(settings.config_dir() / 'kwin_windows.js')
+        self.es, self.es_state = None, ''
+        if valid_client_id(cfg['twitch_client_id']):
+            self.es = TwitchEventSub(cfg['twitch_client_id'])
+            self.es.code.connect(self.show_code)
+            self.es.status.connect(self.es_status)
+            self.es.start()
         self.twitch = None
         if valid_channel(cfg['twitch_channel']):
             self.twitch = TwitchChat(cfg['twitch_channel'])
@@ -377,6 +391,9 @@ class TinyPaws:
         self.interact_act.setCheckable(True)
         self.interact_act.setChecked(self.cfg['interact'])
         self.interact_act.toggled.connect(self.set_interact)
+        if self.es:
+            m.addAction(self.t('tw_login'), self.es.login)
+            m.addAction(self.t('tw_logout'), self.es.logout)
         m.addAction(self.t('settings'), self.open_settings)
         m.addSeparator()
         m.addAction(self.t('quit'), self.quit)
@@ -410,11 +427,17 @@ class TinyPaws:
         if self.kwin and self.kwin.windows is not self.win_seen:
             self.win_seen = self.kwin.windows
             pet.set_windows(self.win_seen, self.geo.x(), self.geo.y())
+        es_on = bool(self.es and self.es.user_id)
         if self.twitch:
             for _ in range(20):  # bounded per tick; engine cooldowns decide what the pet reacts to
                 if self.twitch.events.empty():
                     break
-                brain.handle_event(pet, self.engine, self.twitch.events.get_nowait())
+                ev = self.twitch.events.get_nowait()
+                if es_on and ev['type'] != 'chat':
+                    continue  # EventSub already delivers subs/bits/raids; avoid double reactions
+                brain.handle_event(pet, self.engine, ev)
+        while self.es and self.es.events:
+            brain.handle_event(pet, self.engine, self.es.events.pop(0))
         pet.update(dt)
         items = pet.render()
         if items != self.items:
@@ -486,6 +509,35 @@ class TinyPaws:
         }[k]
         p.play(make())
 
+    # ---------------------------------------------------------------- twitch login
+    def show_code(self, code, url):
+        """Device-code login: the user confirms on twitch.tv; TinyPaws never handles the password."""
+        d = QDialog()
+        d.setWindowTitle('TinyPaws – Twitch')
+        v = QVBoxLayout(d)
+        lab = QLabel(self.t('tw_code').format(url='<a href="%s">%s</a>' % (url, url)))
+        lab.setOpenExternalLinks(True)
+        big = QLabel(code)
+        f = big.font()
+        f.setPointSize(f.pointSize() * 3)
+        f.setBold(True)
+        big.setFont(f)
+        big.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        v.addWidget(lab)
+        v.addWidget(big)
+        bb = QDialogButtonBox(QDialogButtonBox.Ok)
+        bb.accepted.connect(d.accept)
+        v.addWidget(bb)
+        self.code_dialog = d
+        d.show()
+        QDesktopServices.openUrl(QUrl(url))
+
+    def es_status(self, text):
+        self.es_state = text
+        self.tray.setToolTip('TinyPaws – %s\nTwitch: %s' % (self.cfg['name'], text))
+        if text.startswith('verbunden') and getattr(self, 'code_dialog', None):
+            self.code_dialog.close()
+
     # ---------------------------------------------------------------- windows
     def show_panel(self):
         if self.panel is None:
@@ -512,6 +564,8 @@ class TinyPaws:
             self.obs.close()
         if self.twitch:
             self.twitch.close()
+        if self.es:
+            self.es.close()
         if self.kwin:
             self.kwin.close()
         self.app.quit()
