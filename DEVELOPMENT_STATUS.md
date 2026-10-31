@@ -13,6 +13,7 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 | 11 Memes + Hype Train, GigaChad, Absolute Cinema | Test (alle × alle Tierarten), live Stichproben |
 | Fenster klettern + oben schlafen (KDE, Laufzeit-KWin-Skript) | live bestätigt |
 | Startfenster (Twitch/OBS-Knöpfe, Tierwahl, Status), Einzelinstanz, Tray, App-Icon | live |
+| Töne (optional, Standard **aus**, Lautstärke 0–100 %): selbst synthetisierte Tierstimmen je Art, Lok-Hupe, Konfetti, Bonk, Teleport; Abklingzeit gegen Flut | Test (Synthese, Ereignisse, Player, Umschalten), live: alle Töne auf echtem Audiogerät geladen/abgespielt |
 | Mehrere Tiere: bis zu 3 Begleiter (Startfenster: hinzufügen, an/aus, entfernen), eigene Griffe, laufen einander hinterher, spielen Ball, schlafen nebeneinander; Chat-Reaktionen verteilen sich, Stream-Szenen bleiben beim Haupttier; OBS zeigt alle | Test (soziale Aktionen, Verwaltung, Limit, Ziehen, OBS-Sprites); Messung live |
 | Mehrere Monitore: optional zwischen benachbarten Monitoren wandern; an-/abgesteckte Monitore, Auflösungs-/Dock-Änderungen werden übernommen | Test (simulierte 2 Monitore, unterschiedliche Größe/DPI); **offen:** echter Mehrmonitor-Desktop |
 | Einstellungen wirken sofort, ohne Neustart | Test (6 Fälle), Startfenster-Status live |

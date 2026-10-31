@@ -199,6 +199,8 @@ class Emote(Action):
     def start(self, pet):
         if self.bubble:
             pet.say(self.bubble, min(self.dur, 3.5))
+            if self.bubble in SPECIES.values():
+                pet.sound('voice')
         if self.confetti:
             pet.confetti(self.confetti)
 
@@ -230,6 +232,7 @@ class Teleport(Action):
         self.tx, self.bubble, self.moved = tx, bubble, False
 
     def start(self, pet):
+        pet.sound('blip')
         if self.tx is None:
             self.tx = pet.rng.uniform(0, pet.maxx)
         if self.bubble:
@@ -299,6 +302,7 @@ class HypeTrain(Action):
             center = self.front + LOCO_W * s / 2
             if not self.honked and center > pet.W * 0.25:
                 self.honked = True
+                pet.sound('horn')
                 pet.say(self.honk, 1.5)
             if not self.celebrated and center > pet.W * 0.5:
                 self.celebrated, self.cel_t = True, self.t
@@ -658,7 +662,7 @@ MEMES = {
     ],
     'bonk': [
         {'t': 0.6, 'frames': ['stand'], 'props': [('hammer_up', 9, -12, None)]},
-        {'t': 0.35, 'frames': ['surprised'], 'bubble': '*BONK*', 'props': [('hammer_down', 2, -8, None)]},
+        {'t': 0.35, 'frames': ['surprised'], 'bubble': '*BONK*', 'sfx': 'bonk', 'props': [('hammer_down', 2, -8, None)]},
         {'t': 1.6, 'frames': ['sleep'], 'fx': 'stars'},
         {'t': 0.6, 'frames': ['stretch']},
     ],
@@ -785,6 +789,8 @@ class Meme(Action):
         if i >= len(self.steps):
             return
         st = self.steps[i]
+        if st.get('sfx'):
+            pet.sound(st['sfx'])
         if st.get('bubble'):
             pet.say(_tr(st['bubble'], pet.lang), min(st.get('t', 3.0), 3.0))
         if st.get('confetti'):
@@ -910,6 +916,7 @@ class Pet:
         self.bubble, self.held, self.ledges = None, False, []
         self.exits, self.left_by = (), 0  # screen edges with a neighbouring monitor (-1/1); edge just walked off
         self.friends = []  # other pets on the same screen
+        self.sfx = []  # sound events for the app ('voice', 'horn', 'pop', ...); ignored if sound is off
 
     floor = property(lambda self: self.H - 16 * self.s)
     maxx = property(lambda self: self.W - 16 * self.s)
@@ -980,6 +987,10 @@ class Pet:
                 return make()
         return Idle()
 
+    def sound(self, name):
+        if len(self.sfx) < 8:
+            self.sfx.append(name)
+
     def say(self, text, dur=2.5):
         self.bubble = [str(text)[:80], dur]
 
@@ -990,6 +1001,7 @@ class Pet:
                                        color=color, text=text, size=size, g=g))
 
     def confetti(self, n=40, x=None, y=None, colors=CONFETTI):
+        self.sound('pop')
         x = self.cx if x is None else x
         y = self.y if y is None else y
         for _ in range(n):

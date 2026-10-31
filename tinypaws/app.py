@@ -32,7 +32,7 @@ TR = {
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
-               climbnow='Fenster klettern', roam='Zwischen Monitoren wandern', clientid='Twitch Client-ID (Hype Train, Follows)',
+               climbnow='Fenster klettern', roam='Zwischen Monitoren wandern', sound='Töne (leise, optional)', volume='Lautstärke (%)', clientid='Twitch Client-ID (Hype Train, Follows)',
                tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren', obs_btn='In OBS einbinden',
                obs_port_busy='OBS-Quelle aus: Port {0} ist belegt ({1}). Anderen Port in den Einstellungen wählen.',
                st_pet='Tier: {0}', st_obs_on='OBS: aktiv – {0} ({1} Quelle(n) verbunden)', st_obs_off='OBS: aus',
@@ -57,7 +57,7 @@ TR = {
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
-               climbnow='Climb window', roam='Wander between monitors', clientid='Twitch Client ID (Hype Train, follows)',
+               climbnow='Climb window', roam='Wander between monitors', sound='Sounds (quiet, optional)', volume='Volume (%)', clientid='Twitch Client ID (Hype Train, follows)',
                tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link', obs_btn='Add to OBS',
                obs_port_busy='OBS source off: port {0} is busy ({1}). Pick another port in settings.',
                st_pet='Pet: {0}', st_obs_on='OBS: on – {0} ({1} source(s) connected)', st_obs_off='OBS: off',
@@ -327,6 +327,8 @@ class SettingsDialog(QDialog):
         self.poems = QCheckBox(checked=cfg['poems'])
         self.climb = QCheckBox(checked=cfg['climb'])
         self.roam = QCheckBox(checked=cfg['roam'])
+        self.sound = QCheckBox(checked=cfg['sound'])
+        self.volume = QSpinBox(minimum=0, maximum=100, value=cfg['volume'])
         self.clientid = secret_edit(cfg['twitch_client_id'])
         self.clientid.setPlaceholderText('dev.twitch.tv → Anwendung (öffentlich)')
         self.twitch = QLineEdit(cfg['twitch_channel'])
@@ -334,7 +336,8 @@ class SettingsDialog(QDialog):
         self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
         for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb), ('roam', self.roam)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb), ('roam', self.roam), ('sound', self.sound),
+                     ('volume', self.volume)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -349,7 +352,8 @@ class SettingsDialog(QDialog):
         return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed, pack=pack,
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
-                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(), roam=self.roam.isChecked(),
+                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(), roam=self.roam.isChecked(), sound=self.sound.isChecked(),
+                    volume=self.volume.value(),
                     twitch_channel=self.twitch.text().strip().lstrip('#').lower(),
                     twitch_client_id=self.clientid.text().strip().lower(),
                     first_run_done=True)
@@ -616,6 +620,8 @@ class TinyPaws:
             self.handle.show()
         self.drag_off, self.drag_slot, self.items, self.hpos, self.cursor_t, self.raise_t = None, 0, None, None, 0.0, 0.0
         self.companions = []
+        self.player = None
+        self._apply_sound()
         self.full_repaint = True
         self._update_exits()
         app.screenAdded.connect(self._screens_changed)
@@ -746,6 +752,11 @@ class TinyPaws:
                 c['hpos'] = hp
                 c['handle'].move(*hp)
         pets = [pet] + [c['pet'] for c in active]
+        for q in pets:
+            for name in q.sfx:
+                if self.player:
+                    self.player.play('voice_' + q.species if name == 'voice' else name)
+            q.sfx.clear()
         moving = any(p.frame.startswith(('walk', 'run', 'sneak')) for p in pets)  # show every in-between frame
         want = 125 if all(p.sleeping for p in pets) else 1000 // (max(60, self.cfg['fps']) if moving else self.cfg['fps'])
         if self.timer.interval() != want:
@@ -780,6 +791,20 @@ class TinyPaws:
         if self.drag_slot == 0:
             self.cfg['x'] = self.pet.x
             settings.save(self.cfg)
+
+    def _apply_sound(self):
+        """Sound is opt-in: the player (and Qt Multimedia) only exists while it is switched on."""
+        if not self.cfg['sound']:
+            self.player = None
+            return
+        try:
+            if not self.player:
+                from .sound import Player
+                self.player = Player(settings.config_dir() / 'sounds', self.cfg['volume'])
+            self.player.set_volume(self.cfg['volume'])
+        except Exception as e:  # no audio stack: the pet keeps running silently
+            print('tinypaws: sound off: %s' % e, file=sys.stderr)
+            self.player = None
 
     def poke(self, slot=0):
         pet, _ = self._slot(slot)
@@ -1119,6 +1144,8 @@ class TinyPaws:
             self.twitch = TwitchChat(cfg['twitch_channel']) if valid_channel(cfg['twitch_channel']) else None
         if cfg['roam'] != old['roam']:
             self._update_exits()
+        if (cfg['sound'], cfg['volume']) != (old['sound'], old['volume']):
+            self._apply_sound()
         if cfg['climb'] != old['climb']:
             if self.kwin:
                 self.kwin.close()

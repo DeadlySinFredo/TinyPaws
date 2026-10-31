@@ -7,7 +7,7 @@ from pathlib import Path
 
 MAX_COMPANIONS = 3  # plus the main pet: keeps CPU/RAM bounded
 DEFAULTS = dict(name='Mochi', animal='cat', breed='', pack='', scale=6, fps=30, random_level=1.0, lang='de',
-                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', twitch_client_id='', climb=True, roam=False, companions=(), first_run_done=False)
+                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', twitch_client_id='', climb=True, roam=False, sound=False, volume=30, companions=(), first_run_done=False)
 
 
 def config_dir():
@@ -38,7 +38,7 @@ def load(path=None):
         pass
     # validate: a broken file must never crash startup
     for k, lo, hi, typ in (('scale', 1, 12, int), ('fps', 5, 60, int), ('screen', 0, 16, int),
-                           ('random_level', 0.0, 3.0, float), ('obs_port', 1024, 65535, int)):
+                           ('random_level', 0.0, 3.0, float), ('obs_port', 1024, 65535, int), ('volume', 0, 100, int)):
         try:
             cfg[k] = max(lo, min(hi, typ(cfg[k])))
         except (TypeError, ValueError):
