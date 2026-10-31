@@ -35,7 +35,7 @@ TR = {
                tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden',
                tw_code='Öffne {url} und gib diesen Code ein:', pack_import='Tierpaket importieren…',
                pack_export='Tier als Vorlage exportieren…',
-               pack_ok='Paket „{0}“ installiert. Auswahl unter Einstellungen → Tier.'),
+               pack_ok='Paket „{0}“ installiert. Auswahl unter „Tier wählen“.', choose='Tier wählen'),
     'en': dict(panel='Test panel', settings='Settings', interact='Interaction (drag)', quit='Quit',
                walk='Walk', run='Run', jump='Jump', sleep='Sleep', sit='Sit', dance='Dance',
                teleport='Teleport', pizza='Pizza', coffee='Coffee', ball='Ball', hype='Hype Train',
@@ -50,9 +50,21 @@ TR = {
                tw_login='Connect Twitch', tw_logout='Disconnect Twitch',
                tw_code='Open {url} and enter this code:', pack_import='Import pet pack…',
                pack_export='Export pet as template…',
-               pack_ok='Pack “{0}” installed. Pick it in Settings → Animal.'),
+               pack_ok='Pack “{0}” installed. Pick it under “Choose pet”.', choose='Choose pet'),
 }
 INSTALLED = {}  # pet packs: id -> (name, base species), filled at startup
+SPECIES_LABEL = {'de': {'cat': 'Katze', 'dog': 'Hund', 'fox': 'Fuchs', 'rabbit': 'Hase', 'dragon': 'Drache',
+                         'bird': 'Vogel'},
+                 'en': {'cat': 'Cat', 'dog': 'Dog', 'fox': 'Fox', 'rabbit': 'Rabbit', 'dragon': 'Dragon', 'bird': 'Bird'}}
+
+
+def animal_choices(lang):
+    """(label, 'species/breed' or 'pack/<id>') for every pet the user can pick."""
+    out = [('%s – %s' % (SPECIES_LABEL[lang][sp], name), '%s/%s' % (sp, br))
+           for sp in BREEDS for br, (name, _) in BREEDS[sp].items()]
+    return out + [('Paket – %s' % name, 'pack/%s' % pid) for pid, (name, _) in INSTALLED.items()]
+
+
 DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 'Mausi', 'TurboTom',
               'Keksi', 'ZugFan', 'Lenny']
 
@@ -242,12 +254,8 @@ class SettingsDialog(QDialog):
         self.name = QLineEdit(cfg['name'])
         self.name.setMaxLength(24)
         self.animal = QComboBox()
-        for sp, label in (('cat', 'Katze'), ('dog', 'Hund'), ('fox', 'Fuchs'), ('rabbit', 'Hase'),
-                          ('dragon', 'Drache'), ('bird', 'Vogel')):
-            for br, (name, _) in BREEDS[sp].items():
-                self.animal.addItem('%s – %s' % (label, name), '%s/%s' % (sp, br))
-        for pid, (name, base) in INSTALLED.items():
-            self.animal.addItem('Paket – %s' % name, 'pack/%s' % pid)
+        for label, key in animal_choices(cfg['lang']):
+            self.animal.addItem(label, key)
         cur = 'pack/%s' % cfg['pack'] if cfg['pack'] in INSTALLED else '%s/%s' % (cfg['animal'], cfg['breed'])
         self.animal.setCurrentIndex(max(0, self.animal.findData(cur)))
         self.scale = QSpinBox(minimum=1, maximum=12, value=cfg['scale'])
@@ -298,8 +306,17 @@ class Panel(QWidget):
     def __init__(self, ctl):
         super().__init__()
         t = ctl.t
+        self.ctl = ctl
         self.setWindowTitle('TinyPaws – ' + t('panel'))
         v = QVBoxLayout(self)
+        row = QHBoxLayout()
+        row.addWidget(QLabel(t('choose') + ':'))
+        self.animal = QComboBox()
+        self.animal.currentIndexChanged.connect(
+            lambda i: self.animal.signalsBlocked() or ctl.set_animal(self.animal.itemData(i)))
+        row.addWidget(self.animal, 1)
+        v.addLayout(row)
+        self.sync_animal()
         for title, keys in ((t('actions'), ['walk', 'run', 'jump', 'sleep', 'sit', 'dance', 'teleport',
                                             'pizza', 'coffee', 'ball', 'climbnow']),
                             (t('scenes'), ['giga', 'cinema']),
@@ -337,6 +354,14 @@ class Panel(QWidget):
         g.addWidget(self.status, 2, 0, 1, 3)
         v.addWidget(box)
         self.ctl = ctl
+
+    def sync_animal(self):
+        self.animal.blockSignals(True)
+        self.animal.clear()
+        for label, key in animal_choices(self.ctl.cfg['lang']):
+            self.animal.addItem(label, key)
+        self.animal.setCurrentIndex(max(0, self.animal.findData(self.ctl.current_animal())))
+        self.animal.blockSignals(False)
 
     def send(self):
         a = brain.handle_event(self.ctl.pet, self.ctl.engine,
@@ -402,6 +427,8 @@ class TinyPaws:
 
     def _build_menu(self):
         m = QMenu()
+        self.choose_menu = m.addMenu(self.t('choose'))
+        self.choose_menu.aboutToShow.connect(self._fill_choose)
         m.addAction(self.t('panel'), self.show_panel)
         for k in ('hype', 'giga', 'cinema', 'sleep', 'dance'):
             m.addAction(self.t(k), lambda k=k: self.do(k))
@@ -529,6 +556,47 @@ class TinyPaws:
         }[k]
         p.play(make())
 
+    # ---------------------------------------------------------------- pet choice
+    def current_animal(self):
+        return 'pack/%s' % self.cfg['pack'] if self.cfg['pack'] in INSTALLED else \
+            '%s/%s' % (self.cfg['animal'], self.cfg['breed'])
+
+    def _fill_choose(self):
+        """Species submenus with their breeds (+ packs); the current pet is checked."""
+        m = self.choose_menu
+        m.clear()
+        cur, subs = self.current_animal(), {}
+        for label, key in animal_choices(self.cfg['lang']):
+            group, _, rest = label.partition(' – ')
+            sub = subs.get(group) or subs.setdefault(group, m.addMenu(group))
+            a = sub.addAction(rest, lambda key=key: self.set_animal(key))
+            a.setCheckable(True)
+            a.setChecked(key == cur)
+
+    def set_animal(self, key):
+        """Switch pet live: 'species/breed' or 'pack/<id>'."""
+        kind, _, rest = key.partition('/')
+        if kind == 'pack':
+            if rest not in INSTALLED:
+                return
+            self.cfg.update(pack=rest, animal=INSTALLED[rest][1])
+            new_skin = 'pack/%s:' % rest
+        else:
+            self.cfg.update(pack='', animal=kind, breed=rest)
+            new_skin = skin(kind, rest)
+        p = self.pet
+        p.species, p.skin, self.skin = self.cfg['animal'], new_skin, new_skin
+        p.action, p.queue = None, []  # restart behaviour with the new body
+        p.y = p.floor
+        p.say(brain.SPECIES[p.species], 1.5)
+        self.tray.setIcon(QIcon(self.renderer.pixmap(new_skin + 'idle')))
+        settings.save(self.cfg)
+        if self.panel:
+            self.panel.sync_animal()
+        if self.obs:  # the OBS page only has the old pet's frames; serve the new set
+            self.obs.close()
+            self.obs = ObsServer(self.cfg['obs_port'], self.cfg['fps'], new_skin)
+
     # ---------------------------------------------------------------- pet packs
     def import_pack(self):
         path, _ = QFileDialog.getOpenFileName(None, self.t('pack_import'), str(Path.home()), 'TinyPaws (*.zip)')
@@ -537,6 +605,8 @@ class TinyPaws:
         try:
             pid = packs.import_pack(path)
             INSTALLED.update(packs.load_packs())
+            if self.panel:
+                self.panel.sync_animal()
             QMessageBox.information(None, 'TinyPaws', self.t('pack_ok').format(INSTALLED[pid][0]))
         except (OSError, packs.PackError) as e:
             QMessageBox.warning(None, 'TinyPaws', str(e))
