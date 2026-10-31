@@ -377,6 +377,8 @@ class TinyPaws:
         scr = screens[cfg['screen']] if cfg['screen'] < len(screens) else QGuiApplication.primaryScreen()
         self.geo = scr.availableGeometry()  # stay above the panel/taskbar
         s = cfg['scale']
+        if cfg['pack'] not in INSTALLED:
+            packs.load_builtin_hd(cfg['animal'], cfg['breed'])
         self.pet = brain.Pet(self.geo.width(), self.geo.height(), scale=s, random_level=cfg['random_level'],
                              lang=cfg['lang'], name=cfg['name'], poems=cfg['poems'], species=cfg['animal'],
                              breed=cfg['breed'])
@@ -496,7 +498,8 @@ class TinyPaws:
         if hp != self.hpos and self.drag_off is None:
             self.hpos = hp
             self.handle.move(*hp)
-        want = 125 if pet.sleeping else 1000 // self.cfg['fps']  # power save while asleep
+        moving = pet.frame.startswith(('walk', 'run', 'sneak'))  # show every in-between frame while moving
+        want = 125 if pet.sleeping else 1000 // (max(60, self.cfg['fps']) if moving else self.cfg['fps'])
         if self.timer.interval() != want:
             self.timer.setInterval(want)
 
@@ -583,6 +586,7 @@ class TinyPaws:
             new_skin = 'pack/%s:' % rest
         else:
             self.cfg.update(pack='', animal=kind, breed=rest)
+            packs.load_builtin_hd(kind, rest)
             new_skin = skin(kind, rest)
         p = self.pet
         p.species, p.skin, self.skin = self.cfg['animal'], new_skin, new_skin

@@ -9,7 +9,7 @@ s = pixel scale. render() returns a list of draw items consumed by the renderer:
 import math
 import random
 
-from .sprites import BREEDS, SIZES, skin
+from .sprites import BREEDS, GAIT_FRAMES, SIZES, skin
 
 P_IDLE, P_RANDOM, P_CHAT, P_USER, P_SCENE = range(5)
 GRAVITY = 140  # * s px/s^2
@@ -74,8 +74,10 @@ GAITS = {'walk': (16, 12, 0.55), 'run': (12, 36, 0.42), 'sneak': (16, 6, 0.85)}
 FLYERS = ('bird', 'dragon')  # their 'run' is flight: arc through the air
 
 
-def gait_frame(style, t):
-    n, _, cycle = GAITS[style]
+def gait_frame(style, t, skin=''):
+    """Frame for time t; skins with extra in-between frames (HD) use them in the same cycle time."""
+    _, _, cycle = GAITS[style]
+    n = GAIT_FRAMES.get(skin, {}).get(style) or GAITS[style][0]
     return '%s%d' % (style, int(t / cycle * n) % n)
 
 
@@ -96,11 +98,11 @@ class Walk(Action):
         v = GAITS[self.style][1] * pet.s
         d = self.tx - pet.x
         if abs(d) <= v * dt:
-            pet.x = self.tx
+            pet.x, pet.y = self.tx, pet.floor  # flyers land exactly on the floor
             return True
         pet.facing = 1 if d > 0 else -1
         pet.x += pet.facing * v * dt
-        pet.frame = gait_frame(self.style, self.t)
+        pet.frame = gait_frame(self.style, self.t, pet.skin)
         return False
 
 
@@ -262,7 +264,7 @@ class HypeTrain(Action):
         if self.phase == 'runoff':
             pet.facing = 1
             pet.x += GAITS['run'][1] * 1.5 * s * dt
-            pet.frame = gait_frame('run', self.t * 1.5)
+            pet.frame = gait_frame('run', self.t * 1.5, pet.skin)
             if pet.x > pet.W + 4 * s:
                 self.phase, self.front = 'train', -LOCO_W * s
             return False
@@ -386,7 +388,7 @@ class Cinema(Action):
             else:
                 pet.facing = 1 if d > 0 else -1
                 pet.x += pet.facing * v
-                pet.frame = gait_frame('walk', self.t * 2)
+                pet.frame = gait_frame('walk', self.t * 2, pet.skin)
             return False
         if self.phase == 'sit':
             pet.y, pet.frame = pet.floor - 5 * s, ('sit' if dtp < 0.5 else 'cinema')
@@ -475,11 +477,11 @@ class Climb(Action):
             else:
                 pet.facing = 1 if d > 0 else -1
                 pet.x += pet.facing * v
-                pet.frame = gait_frame('walk', self.t)
+                pet.frame = gait_frame('walk', self.t, pet.skin)
         elif self.phase == 'climb':
             pet.facing = self.side
             pet.y -= self.SPEED * s * dt
-            pet.frame = gait_frame('walk', self.t * 1.3)
+            pet.frame = gait_frame('walk', self.t * 1.3, pet.skin)
             if pet.y <= self.top - 8 * s:
                 self.hop_from = pet.x
                 self._go('hop')
@@ -500,7 +502,7 @@ class Climb(Action):
             else:
                 pet.facing = 1 if d > 0 else -1
                 pet.x += pet.facing * v
-                pet.frame = gait_frame('walk', self.t)
+                pet.frame = gait_frame('walk', self.t, pet.skin)
         elif self.phase == 'lounge':
             pet.y, pet.frame = self.top - 16 * s, 'lounge'
             if pet.rng.random() < dt * 0.8:
@@ -685,7 +687,7 @@ class Meme(Action):
             style = 'run' if st['walk_off'] == 'run' else 'walk'
             pet.y = pet.floor
             pet.x += pet.facing * GAITS[style][1] * (1 if style == 'run' else 1.5) * s * dt
-            pet.frame = gait_frame(style, lt * (1 if style == 'run' else 1.5))
+            pet.frame = gait_frame(style, lt * (1 if style == 'run' else 1.5), pet.skin)
             done = pet.x < -16 * s or pet.x > pet.W or lt > 15
         elif st.get('home'):
             self.vy += GRAVITY * s * dt
@@ -764,7 +766,7 @@ class Meme(Action):
         if name.startswith('@'):
             name = pet.skin + name[1:]
         elif name == '%visitor':
-            name = self.visitor + ('idle' if lt >= 1.5 else gait_frame('walk', lt))
+            name = self.visitor + ('idle' if lt >= 1.5 else gait_frame('walk', lt, self.visitor))
         w, h = SIZES[name]
         x = pet.x + (dx if pet.facing > 0 else 16 - dx - w) * s
         y = pet.H - h * s if dy is None else pet.y + dy * s
@@ -879,7 +881,10 @@ class Pet:
         """top=True: align the sprite's top with the box (for frames taller than 16 that hang below)."""
         name = self.skin + (frame or self.frame)
         w, h = SIZES[name]
-        y = self.y if top else self.y + (16 - h) * self.s
+        if angle:  # rotate around the box centre, whatever the frame height
+            y = self.y + (16 - h) * self.s / 2
+        else:
+            y = self.y if top else self.y + (16 - h) * self.s
         out.append(('sprite', name, self.x + (16 - w) * self.s / 2, y, self.facing < 0, angle))
 
     def set_windows(self, windows, ox=0.0, oy=0.0):

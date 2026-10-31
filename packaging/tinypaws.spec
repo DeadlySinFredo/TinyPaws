@@ -8,7 +8,7 @@ EXCLUDES = ['PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets', 'PySide6.Qt
             'PySide6.QtDesigner', 'PySide6.QtBluetooth', 'PySide6.QtPositioning', 'tkinter']
 
 a = Analysis([ROOT + '/packaging/tinypaws_entry.py'], pathex=[ROOT],
-             datas=[(ROOT + '/tinypaws/reactions.json', 'tinypaws')],
+             datas=[(ROOT + '/tinypaws/reactions.json', 'tinypaws'), (ROOT + '/assets/pets', 'assets/pets')],
              hiddenimports=['PySide6.QtDBus', 'PySide6.QtWebSockets', 'PySide6.QtNetwork'],
              excludes=EXCLUDES)
 pyz = PYZ(a.pure)

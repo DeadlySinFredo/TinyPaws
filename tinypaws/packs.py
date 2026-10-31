@@ -48,6 +48,7 @@ def export_pack(skin, dest, pack_id='my-pet', name='Mein Tier', base='cat'):
         frames[k] = [len(cells)]
         cells.append(sprites.SPRITES[skin + k])
     for anim, n in ANIMS.items():
+        n = sprites.GAIT_FRAMES.get(skin, {}).get(anim, n)
         frames[anim] = list(range(len(cells), len(cells) + n))
         cells += [sprites.SPRITES[skin + '%s%d' % (anim, i)] for i in range(n)]
     fw = max(len(c[0]) for c in cells)
@@ -152,20 +153,26 @@ _char_next = [0x3000]  # private char range for pack colors, after the built-in 
 
 
 def to_frames(manifest, sheet):
-    """Cut the sheet into char-grid frames for every name the brain uses (with fallbacks)."""
+    """Cut the sheet into char-grid frames for every name the brain uses (with fallbacks).
+
+    Animations with more cells than the brain's default keep all of them (smoother, same cycle time);
+    shorter ones are stretched to the default length. Returns (frames, colors, gait counts).
+    """
     fw, fh = manifest['cell']
     colors, cut = {}, {}
+    img = sheet.convertToFormat(QImage.Format_ARGB32)
+    data, bpl = bytes(img.constBits())[:img.sizeInBytes()], img.bytesPerLine()  # BGRA bytes, fast to scan
 
     def grid(c):
         rows = []
         for y in range(c[1] * fh, (c[1] + 1) * fh):
-            row = []
+            row, base = [], y * bpl
             for x in range(c[0] * fw, (c[0] + 1) * fw):
-                px = sheet.pixelColor(x, y)
-                if px.alpha() < 128:
+                b, g, r, a = data[base + 4 * x:base + 4 * x + 4]
+                if a < 128:
                     row.append('.')
                     continue
-                key = px.name()
+                key = '#%02x%02x%02x' % (r, g, b)
                 if key not in colors:
                     if len(colors) >= MAX_COLORS:
                         raise PackError('zu viele Farben (max. %d)' % MAX_COLORS)
@@ -180,29 +187,61 @@ def to_frames(manifest, sheet):
         while name not in src:
             name = FALLBACK.get(name, 'idle')
         cut[k] = grid(src[name][0])
+    counts = {}
     for anim, n in ANIMS.items():
         cells = src.get(anim) or src['walk']
+        n = counts[anim] = max(n, len(cells))
         for i in range(n):
             cut['%s%d' % (anim, i)] = grid(cells[i * len(cells) // n])
-    cut['walk1'], cut['walk2'] = cut['walk4'], cut['walk12']
-    return cut, list(colors)
+    w = counts['walk']
+    cut['walk1'], cut['walk2'] = cut['walk%d' % (w // 4)], cut['walk%d' % (3 * w // 4)]  # legacy names
+    return cut, list(colors), counts
 
 
-def register(manifest, sheet):
-    """Add a pack's frames to the global sprite tables; returns its sprite prefix."""
-    cut, colors = to_frames(manifest, sheet)
+def register(manifest, sheet, prefix=None):
+    """Add frames to the global sprite tables (replacing same-named ones); returns the sprite prefix."""
+    cut, colors, counts = to_frames(manifest, sheet)
     chars = {}
     for c in colors:
         ch = chr(_char_next[0])
         _char_next[0] += 1
         chars[c] = ch
         sprites.PALETTE[ch] = c
-    prefix = 'pack/%s:' % manifest['id']
+    prefix = 'pack/%s:' % manifest['id'] if prefix is None else prefix
+    sprites.GAIT_FRAMES[prefix] = counts
     for k, rows in cut.items():
         sprites.SPRITES[prefix + k] = [''.join('.' if p == '.' else chars[p] for p in r) for r in rows]
         sprites.DENSITY[prefix + k] = manifest['density']
         sprites.SIZES[prefix + k] = (len(rows[0]) // manifest['density'], len(rows) // manifest['density'])
     return prefix
+
+
+ASSETS = Path(__file__).resolve().parent.parent / 'assets' / 'pets'
+if getattr(sys, 'frozen', False):  # PyInstaller bundle
+    ASSETS = Path(sys._MEIPASS) / 'assets' / 'pets'
+_hd_loaded = set()
+
+
+def load_builtin_hd(species, breed):
+    """Swap a built-in pet's generated frames for its HD sheet (assets/pets/<species>/<breed>).
+
+    Loaded on demand (one sheet ~0.5 s) for the pet in use. Missing or broken sheet -> the
+    procedural frames stay, so the pet always works. Returns True if HD is active.
+    """
+    breed = breed if breed in sprites.BREEDS.get(species, {}) else next(iter(sprites.BREEDS[species]))
+    key = (species, breed)
+    if key in _hd_loaded:
+        return True
+    d = ASSETS / species / breed
+    try:
+        manifest, sheet = validate(json.loads((d / 'manifest.json').read_text(encoding='utf-8')),
+                                   QImage(str(d / 'sheet.png')))
+        register(manifest, sheet, prefix=sprites.skin(species, breed))
+    except (OSError, ValueError) as e:
+        print('tinypaws: HD %s/%s unavailable, using generated frames: %s' % (species, breed, e), file=sys.stderr)
+        return False
+    _hd_loaded.add(key)
+    return True
 
 
 def load_packs():

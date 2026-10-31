@@ -56,6 +56,7 @@ Alles andere im ZIP wird ignoriert und **nie** entpackt. Pakete enthalten keinen
 **Animationen** (beliebig viele Zellen, werden auf die benötigte Länge gestreckt):
 `walk`, `run` (Galopp/Flug), `sneak` (Anschleichen).
 
+Mehr Zellen als 16/12/16 werden komplett genutzt (flüssiger, gleiche Geschwindigkeit), weniger werden gestreckt.
 Fehlende Bilder werden ersetzt (z. B. `blink` → `idle`, `run` → `walk`, `lounge` → `sleep`).
 
 Seitliche Bilder schauen **nach rechts**; TinyPaws spiegelt sie selbst. Das Tier steht unten mittig in

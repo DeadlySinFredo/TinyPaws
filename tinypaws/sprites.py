@@ -21,4 +21,6 @@ PALETTE.update(EXTRA_PALETTE)
 PALETTE.update(PROP_COLORS)
 # pixels per logical unit; the brain lays out in logical units, the renderer draws at scale/density
 DENSITY = {k: PET_DENSITY for k in SPRITES}
+# skin prefix -> {'walk': n, ...} for skins with more gait frames than the generator (HD sheets, packs)
+GAIT_FRAMES = {}
 SIZES = {k: (len(v[0]) // DENSITY.get(k, 1), len(v) // DENSITY.get(k, 1)) for k, v in SPRITES.items()}
