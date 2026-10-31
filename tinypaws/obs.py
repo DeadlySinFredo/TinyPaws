@@ -66,7 +66,7 @@ class ObsServer:
     PING = 2.0  # seconds of silence before a keepalive (page watchdog reconnects after 6 s)
 
     def __init__(self, port=8737, fps=30, skin=''):
-        self.fps, self.seq, self.n = fps, 0, 0
+        self.fps, self.seq, self.n, self.clients = fps, 0, 0, 0
         self.boot = '%x' % (int(time.time() * 1000) ^ os.getpid())  # versions stay unique across app restarts
         self.cond = threading.Condition()
         self.set_skin(skin)
@@ -98,6 +98,8 @@ class ObsServer:
                     self.send_header('Cache-Control', 'no-cache')
                     self.end_headers()
                     seen = -1
+                    with srv.cond:
+                        srv.clients += 1
                     try:
                         self.wfile.write(b'retry: 2000\n\n')  # browser auto-retry pace
                         while srv.httpd:
@@ -110,8 +112,11 @@ class ObsServer:
                                 self.wfile.write(b'event: ping\ndata: 1\n\n')
                             self.wfile.flush()
                             time.sleep(1 / srv.fps)  # cap per-client rate
-                    except (BrokenPipeError, ConnectionResetError):
+                    except (BrokenPipeError, ConnectionResetError, OSError):
                         pass
+                    finally:
+                        with srv.cond:
+                            srv.clients -= 1
                 else:
                     self.send_error(404)
 

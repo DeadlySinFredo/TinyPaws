@@ -33,6 +33,9 @@ TR = {
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
                climbnow='Fenster klettern', clientid='Twitch Client-ID (Hype Train, Follows)',
                tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren', obs_btn='In OBS einbinden',
+               obs_port_busy='OBS-Quelle aus: Port {0} ist belegt ({1}). Anderen Port in den Einstellungen wählen.',
+               st_pet='Tier: {0}', st_obs_on='OBS: aktiv – {0} ({1} Quelle(n) verbunden)', st_obs_off='OBS: aus',
+               st_tw_off='nicht verbunden',
                home_sub='Dein Pixel-Haustier', tw_hint='Follows, Abos, Raids & Hype Train auf deinem Kanal.',
                show_home='TinyPaws öffnen',
                obs_copied='OBS-Link kopiert: {url}\nIn OBS: Quelle „Browser“ → URL einfügen, Breite {w}, Höhe {h}.',
@@ -54,6 +57,9 @@ TR = {
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
                climbnow='Climb window', clientid='Twitch Client ID (Hype Train, follows)',
                tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link', obs_btn='Add to OBS',
+               obs_port_busy='OBS source off: port {0} is busy ({1}). Pick another port in settings.',
+               st_pet='Pet: {0}', st_obs_on='OBS: on – {0} ({1} source(s) connected)', st_obs_off='OBS: off',
+               st_tw_off='not connected',
                home_sub='Your pixel pet', tw_hint='Follows, subs, raids & hype train on your channel.',
                show_home='Open TinyPaws',
                obs_copied='OBS link copied: {url}\nIn OBS: add a “Browser” source, paste the URL, width {w}, height {h}.',
@@ -384,6 +390,9 @@ class Home(QWidget):
             v.addWidget(info)
             return info
 
+        self.status = QLabel('')
+        self.status.setStyleSheet('QLabel{background:rgba(127,127,127,40);border-radius:8px;padding:8px}')
+        v.addWidget(self.status)
         self.tw_info = big(t('tw_login'), ctl.twitch_connect, '#9146ff', '#772ce8')
         self.obs_info = big(t('obs_btn'), self.obs, '#2f6fde', '#1f57b5')
         row = QHBoxLayout()
@@ -413,6 +422,21 @@ class Home(QWidget):
         self.animal.setCurrentIndex(max(0, self.animal.findData(c.current_animal())))
         self.animal.blockSignals(False)
         self.tw_info.setText(c.es_state or c.t('tw_hint'))
+        self.update_status()
+
+    def update_status(self):
+        self.status.setText('<br>'.join(self.ctl.status_lines()))
+
+    def showEvent(self, e):
+        super().showEvent(e)
+        if not hasattr(self, 'live'):
+            self.live = QTimer(self)
+            self.live.timeout.connect(self.update_status)
+        self.live.start(1000)  # OBS connections come and go
+
+    def hideEvent(self, e):
+        super().hideEvent(e)
+        self.live.stop()
 
 
 class Panel(QWidget):
@@ -512,12 +536,9 @@ class TinyPaws:
         if cfg['interact']:
             self.handle.show()
         self.drag_off, self.items, self.hpos, self.cursor_t, self.raise_t = None, None, None, 0.0, 0.0
-        self.panel, self.obs, self.home = None, None, None
+        self.panel, self.obs, self.home, self.obs_error = None, None, None, ''
         if cfg['obs']:
-            try:
-                self.obs = ObsServer(cfg['obs_port'], cfg['fps'], self.skin)
-            except OSError as e:  # port taken: desktop pet still works
-                print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
+            self._start_obs()
         self.kwin, self.win_seen = None, None
         if cfg['climb'] and 'KDE' in os.environ.get('XDG_CURRENT_DESKTOP', ''):
             from . import kwin  # QtDBus: Linux/KDE only
@@ -560,14 +581,18 @@ class TinyPaws:
         m.addSeparator()
         m.addAction(self.t('quit'), self.quit)
         self.menu = m
-        self.tray = QSystemTrayIcon(QIcon(APP_ICON))
-        tip = 'TinyPaws – %s' % self.cfg['name']
-        if self.cfg['twitch_channel']:
-            tip += '\nTwitch: #%s' % self.cfg['twitch_channel']
-        self.tray.setToolTip(tip)
+        if not getattr(self, 'tray', None):
+            self.tray = QSystemTrayIcon(QIcon(APP_ICON))
+            self.tray.activated.connect(lambda r: self.show_home() if r == QSystemTrayIcon.Trigger else None)
+            self.tray.show()
         self.tray.setContextMenu(m)
-        self.tray.activated.connect(lambda r: self.show_home() if r == QSystemTrayIcon.Trigger else None)
-        self.tray.show()
+        self._tooltip()
+
+    def _tooltip(self):
+        tip = 'TinyPaws – %s' % self.cfg['name']
+        if self.es_state or self.cfg['twitch_channel']:
+            tip += '\nTwitch: %s' % (self.es_state or '#' + self.cfg['twitch_channel'])
+        self.tray.setToolTip(tip)
 
     # ---------------------------------------------------------------- loop
     def tick(self):
@@ -792,7 +817,7 @@ class TinyPaws:
 
     def es_status(self, text):
         self.es_state = text
-        self.tray.setToolTip('TinyPaws – %s\nTwitch: %s' % (self.cfg['name'], text))
+        self._tooltip()
         if self.home:
             self.home.refresh()
         if not text.startswith('verbunden'):
@@ -807,15 +832,28 @@ class TinyPaws:
             settings.save(self.cfg)
             self.twitch = TwitchChat(login)
 
+    def _start_obs(self):
+        """Start the OBS server; a taken port must not break the desktop pet. Returns True on success."""
+        try:
+            self.obs, self.obs_error = ObsServer(self.cfg['obs_port'], self.cfg['fps'], self.skin), ''
+            return True
+        except OSError as e:
+            self.obs, self.obs_error = None, self.t('obs_port_busy').format(self.cfg['obs_port'], e.strerror or e)
+            print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
+            return False
+
+    def _stop_obs(self):
+        if self.obs:
+            self.obs.close()
+            self.obs = None
+
     def copy_obs_link(self):
         if not self.obs:  # switch the browser source on if it was off
-            try:
-                self.obs = ObsServer(self.cfg['obs_port'], self.cfg['fps'], self.skin)
-                self.cfg['obs'] = True
-                settings.save(self.cfg)
-            except OSError as e:
-                QMessageBox.warning(None, 'TinyPaws', 'OBS: %s' % e)
-                return 'OBS: %s' % e
+            if not self._start_obs():
+                QMessageBox.warning(None, 'TinyPaws', self.obs_error)
+                return self.obs_error
+            self.cfg['obs'] = True
+            settings.save(self.cfg)
         url = 'http://127.0.0.1:%d/' % self.obs.port
         QGuiApplication.clipboard().setText(url)
         msg = self.t('obs_copied').format(url=url, w=self.geo.width(), h=self.geo.height())
@@ -841,17 +879,81 @@ class TinyPaws:
     def open_settings(self):
         d = SettingsDialog(self.cfg)
         if d.exec():
-            self.cfg = d.result_cfg()
-            self.cfg['x'] = self.pet.x
-            settings.save(self.cfg)
-            settings.set_autostart(self.cfg['autostart'])
-            # shortcut: restart to apply scale/screen/lang everywhere; fine for a settings change
-            root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            os.environ['PYTHONPATH'] = root + os.pathsep + os.environ.get('PYTHONPATH', '')
-            cmd = settings.launch_cmd() + ['--autostart']
+            self.apply_settings(d.result_cfg())
+
+    def apply_settings(self, new):
+        """Apply changed settings live (no process restart)."""
+        old, self.cfg = self.cfg, dict(new, x=self.pet.x)
+        p, cfg = self.pet, self.cfg
+        p.name, p.random_level, p.poems, p.lang = cfg['name'], cfg['random_level'], cfg['poems'], cfg['lang']
+        if (cfg['animal'], cfg['breed'], cfg['pack']) != (old['animal'], old['breed'], old['pack']):
+            self.set_animal('pack/%s' % cfg['pack'] if cfg['pack'] in INSTALLED else '%s/%s' % (cfg['animal'], cfg['breed']))
+        if (cfg['scale'], cfg['screen']) != (old['scale'], old['screen']):
+            self._apply_geometry()
+        if cfg['interact'] != old['interact']:
+            self.interact_act.setChecked(cfg['interact'])
+        if (cfg['obs'], cfg['obs_port']) != (old['obs'], old['obs_port']) or not cfg['obs']:
+            self._stop_obs()
+            self.obs_error = ''
+            if cfg['obs']:
+                self._start_obs()
+        if cfg['twitch_client_id'] != old['twitch_client_id']:
+            if self.es:
+                self.es.close()
+            self.es, self.es_state = None, ''
+            if valid_client_id(cfg['twitch_client_id']):
+                self._start_eventsub(cfg['twitch_client_id'])
+        if cfg['twitch_channel'] != old['twitch_channel']:
+            if self.twitch:
+                self.twitch.close()
+            self.twitch = TwitchChat(cfg['twitch_channel']) if valid_channel(cfg['twitch_channel']) else None
+        if cfg['climb'] != old['climb']:
             if self.kwin:
                 self.kwin.close()
-            os.execv(cmd[0], cmd)
+                self.kwin = None
+                p.set_windows([])
+            if cfg['climb'] and 'KDE' in os.environ.get('XDG_CURRENT_DESKTOP', ''):
+                from . import kwin
+                self.kwin = kwin.KWinWindows(settings.config_dir() / 'kwin_windows.js')
+        if cfg['autostart'] != old['autostart']:
+            settings.set_autostart(cfg['autostart'])
+        if cfg['lang'] != old['lang']:  # rebuild every text: menu now, windows on next open
+            self._build_menu()
+            for w in ('panel', 'home'):
+                win = getattr(self, w)
+                if win:
+                    win.close()
+                    win.deleteLater()
+                    setattr(self, w, None)
+            self.show_home()
+        self._tooltip()
+        if self.home:
+            self.home.refresh()
+        settings.save(cfg)
+
+    def _apply_geometry(self):
+        """New pet size or monitor: move the overlay and re-lay the pet out without restarting."""
+        screens = QGuiApplication.screens()
+        scr = screens[self.cfg['screen']] if self.cfg['screen'] < len(screens) else QGuiApplication.primaryScreen()
+        self.geo = scr.availableGeometry()
+        s, p = self.cfg['scale'], self.pet
+        self.overlay.setGeometry(self.geo)
+        p.W, p.H, p.s = self.geo.width(), self.geo.height(), s
+        p.action, p.queue, p.particles = None, [], []
+        p.x, p.y = p.clampx(p.x), p.floor
+        self.renderer = Renderer(s)
+        self.handle.resize(16 * s, 16 * s)
+        self.items = self.hpos = None
+
+    def status_lines(self):
+        """Human-readable state for the start window."""
+        label = dict((k, l) for l, k in animal_choices(self.cfg['lang'])).get(self.current_animal(), '?')
+        if self.obs:
+            obs = self.t('st_obs_on').format('http://127.0.0.1:%d/' % self.obs.port, self.obs.clients)
+        else:
+            obs = self.obs_error or self.t('st_obs_off')
+        tw = self.es_state or (('#' + self.cfg['twitch_channel']) if self.twitch else self.t('st_tw_off'))
+        return [self.t('st_pet').format(label), obs, 'Twitch: ' + tw]
 
     def quit(self):
         self.cfg['x'] = self.pet.x
