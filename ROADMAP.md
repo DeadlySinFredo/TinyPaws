@@ -1,7 +1,7 @@
 # Roadmap
 
 - [x] **Phase 1** – Pixel-Katze auf dem Desktop: laufen, rennen, sitzen, schlafen/aufwachen, springen, ziehen, Click-Through, immer oben, Einstellungen + Autostart, Tray, Testpanel.
-- [~] **Phase 2** – Animation Engine (fertig: Prioritäten, Queue, Partikel) · Hund + je 6 Rassen fertig, Gangarten Gehen/Galopp/Schleichen · Vogel, Fuchs, Hase, Drache offen.
+- [~] **Phase 2** – Animation Engine (fertig: Prioritäten, Queue, Partikel) · 6 Tierarten (Katze, Hund, Fuchs, Hase, Drache, Vogel) mit 4–6 Rassen, Gangarten Gehen/Galopp/Schleichen/Fliegen fertig.
 - [~] **Phase 3** – Gegenstände: Pizza, Banane, Kaffee, Popcorn, Ball, Sessel, Lok, Waggons fertig · Karton, Kratzbaum, Kissen, Bett, Fernseher … offen.
 - [x] **Phase 4** – Chat Reaction Engine ohne KI (33 Regeln, JSON) · Ziel 100+ Regeln.
 - [~] **Phase 5** – Twitch-Chat anonym (IRC: Chat, Abo, Geschenk-Abo, Bits, Raid, Reconnect, begrenzte Queue) fertig · offen: Twitch EventSub/OAuth (Hype Train, Follows), Twitch (EventSub + IRC), Kick, YouTube Live, TikTok – mit Reconnect, Rate-Limits, sicherer Tokenablage (Secret Service/libsecret).

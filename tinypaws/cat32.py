@@ -136,11 +136,41 @@ def _front_head_cat(g, eyes):
         _thin(g, (19.5, 15), (24.4, 14.6 + dy), 'S')
 
 
+def _tail(g, pts, sp, r=1.6, c='O'):
+    """Species tail along pts (base first)."""
+    if sp == 'rabbit':
+        _ell(g, pts[0][0] - 0.8, pts[0][1] - 0.5, 2.4, 2.2, 'L')  # cotton puff
+        return
+    if sp == 'fox':
+        _line(g, pts, r + 1.1, c)
+        _ell(g, pts[-1][0], pts[-1][1], 2.3, 2.3, 'L')  # white brush tip
+        return
+    _line(g, pts, r, c)
+    if sp == 'dragon':
+        (x0, y0), (x1, y1) = pts[-2], pts[-1]
+        d = math.hypot(x1 - x0, y1 - y0) or 1
+        ux, uy = (x1 - x0) / d, (y1 - y0) / d
+        _tri(g, (x1 - uy * 2.2, y1 + ux * 2.2), (x1 + uy * 2.2, y1 - ux * 2.2), (x1 + ux * 3, y1 + uy * 3), 'M')
+    else:
+        _ell(g, pts[-1][0], pts[-1][1], r, r, 'D')
+
+
+def _wing(g, root, tip_dx, tip_dy):
+    """Dragon wing: bony leading edge + membrane, root at the shoulder."""
+    rx, ry = root
+    tip = (rx + tip_dx, ry + tip_dy)
+    _tri(g, (rx - 4, ry), (rx + 2, ry), tip, 'M')
+    _tri(g, (rx - 4, ry), tip, (rx - 6, ry - 0.5 + tip_dy * 0.45), 'M')
+    _line(g, [(rx + 1, ry), tip], 0.7, 'O')
+
+
 def front(eyes='open', arms='down', sp='cat'):
-    """Front-facing sitting chibi cat (idle pose); arms='up' = ABSOLUTE CINEMA."""
+    """Front-facing sitting chibi pet; arms='up' = ABSOLUTE CINEMA."""
     g = _blank()
-    _line(g, [(23, 29), (28.5, 27.5), (29, 20)], 1.6, 'O')
-    _ell(g, 29, 19.5, 1.7, 1.7, 'D')
+    if sp == 'dragon':
+        _wing(g, (10, 19), -8, -9)
+        _wing(g, (22, 19), 8, -9)
+    _tail(g, [(23, 29), (28.5, 27.5), (29, 20)], sp)
     if arms == 'up':
         _line(g, [(10, 22), (5, 10)], 1.7, 'O')
         _line(g, [(22, 22), (27, 10)], 1.7, 'O')
@@ -165,12 +195,13 @@ def _leg(g, top, bottom, c, paw=True):
         _ell(g, bottom[0] + .6, bottom[1] + .3, 2, 1.3, 'L')
 
 
-# style: (frames, stride px, paw lift px, body drop px, leg phases: far hind, far front, near hind, near front)
+# style: (frames, stride, paw lift, body drop, leg phases: far hind, far front, near hind, near front)
+# Frame counts give ~30 fps at the brain's cycle times -> smooth loops.
 GAITS = {
     'stand': (1, 0, 0, 0, (0, 0, 0, 0)),
-    'walk': (8, 7, 2.6, 0, (0.5, 0.75, 0.0, 0.25)),   # lateral-sequence walk
-    'run': (6, 10, 4.0, 0, (0.08, 0.6, 0.0, 0.5)),     # gallop: hinds then fronts
-    'sneak': (8, 4, 1.6, 3, (0.5, 0.75, 0.0, 0.25)),  # crouched stalk
+    'walk': (16, 7, 2.6, 0, (0.5, 0.75, 0.0, 0.25)),   # lateral-sequence walk
+    'run': (12, 10, 4.0, 0, (0.08, 0.6, 0.0, 0.5)),    # gallop: hinds then fronts
+    'sneak': (16, 4, 1.6, 3, (0.5, 0.75, 0.0, 0.25)),  # crouched stalk
 }
 SWING = 0.4  # part of the cycle a paw is in the air
 
@@ -211,8 +242,7 @@ def _standing(style='stand', i=0, eyes='open', shift=0, tail=True, sp='cat'):
         else:
             sway = 1.4 * math.sin(2 * math.pi * t)
             pts = [(6 + o, by - 3), (3 + o, by - 9), (4 + o + sway, by - 16)]
-        _line(g, pts, 1.6, 'O')
-        _ell(g, pts[-1][0], pts[-1][1], 1.6, 1.6, 'D')
+        _tail(g, pts, sp)
     hips = ((8.5, by), (18.5, by), (11.5, by + 1), (20.5, by + 1))  # far hind, far front, near hind, near front
     for k in (0, 1, 2, 3):
         dx, up = _foot((t + phases[k]) % 1.0, stride, lift)
@@ -222,8 +252,12 @@ def _standing(style='stand', i=0, eyes='open', shift=0, tail=True, sp='cat'):
         if k == 1:  # body between far and near legs
             _ell(g, 14 + o, by, 8.5 + (0.8 * math.cos(2 * math.pi * t) if style == 'run' else 0), 4.6, 'O')
             _ell(g, 19 + o, by + 1, 3.4, 3, 'L')
-            for x in (9, 12, 15):
-                _px(g, [(int(x + o), int(by - 4)), (int(x + o), int(by - 3)), (int(x + o) + 1, int(by - 3))], 'D')
+            if sp in ('cat', 'dog'):
+                for x in (9, 12, 15):
+                    _px(g, [(int(x + o), int(by - 4)), (int(x + o), int(by - 3)), (int(x + o) + 1, int(by - 3))], 'D')
+            if sp == 'dragon':
+                flap = 4 * math.sin(2 * math.pi * t) if style == 'run' else 0
+                _wing(g, (14 + o, by - 3.5), -5, -10 + flap)
     hy = 10.5 + drop * 1.1 + bob * 0.6
     HEADS[sp][0](g, 22 + o + (1 if style == 'sneak' else 0), hy, eyes)
     return g
@@ -235,10 +269,12 @@ def stand(style='stand', i=0, eyes='open', sp='cat'):
 
 def sit(eyes='open', sp='cat'):
     g = _blank()
-    _line(g, [(10, 29.5), (4, 29), (2.5, 25)], 1.5, 'O')
+    _tail(g, [(10, 29.5), (4, 29), (2.5, 25)], sp, 1.5)
     _ell(g, 14, 22, 7, 7.5, 'O')
     _ell(g, 12, 25.5, 6, 4.5, 'O')
     _ell(g, 19, 21, 3.4, 4, 'L')
+    if sp == 'dragon':
+        _wing(g, (12, 18), -5, -9)
     _leg(g, (18, 22), (18, 29), 'D')
     _leg(g, (21, 22), (21, 29), 'O')
     _ell(g, 9, 29.3, 2.4, 1.3, 'L')
@@ -248,11 +284,13 @@ def sit(eyes='open', sp='cat'):
 
 def jump(eyes='open', sp='cat'):
     g = _blank()
-    _line(g, [(6, 16), (2.5, 12), (2, 7)], 1.6, 'O')
+    _tail(g, [(6, 16), (2.5, 12), (2, 7)], sp)
     _leg(g, (9, 19), (4, 25), 'D')
     _leg(g, (20, 19), (26, 25), 'D')
     _ell(g, 15, 17, 10, 5, 'O')
     _ell(g, 21, 18.5, 3.5, 2.8, 'L')
+    if sp == 'dragon':
+        _wing(g, (14, 14), -4, -11)
     _leg(g, (11, 20), (6, 27), 'O')
     _leg(g, (22, 20), (28, 26.5), 'O')
     HEADS[sp][0](g, 23, 11.5, eyes)
@@ -262,27 +300,35 @@ def jump(eyes='open', sp='cat'):
 def sleep(sp='cat'):
     g = _blank()
     _ell(g, 15, 25.5, 11, 5.2, 'O')
-    for x in (8, 11, 14):
-        _px(g, [(x, 21), (x, 22), (x + 1, 22)], 'D')
+    if sp in ('cat', 'dog'):
+        for x in (8, 11, 14):
+            _px(g, [(x, 21), (x, 22), (x + 1, 22)], 'D')
+    if sp == 'dragon':
+        _wing(g, (13, 22), -6, -4)
     HEADS[sp][0](g, 23, 24.5, 'closed')
-    _line(g, [(4, 28), (8, 30.3), (17, 30.3)], 1.3, 'D')
+    _tail(g, [(4, 28), (8, 30.3), (17, 30.3)], sp, 1.3, 'D')
     return _finish(g)
+
+
+SIDE_EYES = {'cat': (-5, 3, -2), 'dog': (-1, 4, -3), 'fox': (-3, 2, -2), 'rabbit': (-2, 3, -2), 'dragon': (-3, 2, -2)}
 
 
 def flex(sp='cat'):
     g = _standing(shift=8, tail=True, sp=sp)
-    _line(g, [(15, 17), (8, 17), (8, 10)], 1.7, 'D')  # back arm (behind body would be hidden; keep visible)
+    _line(g, [(15, 17), (8, 17), (8, 10)], 1.7, 'D')  # back arm
     _ell(g, 10.5, 15.5, 2.4, 2, 'D')
     _ell(g, 8, 9, 2.1, 2.1, 'L')
     _line(g, [(27, 19), (34, 19), (34, 12)], 1.8, 'O')
     _ell(g, 31, 17.2, 2.8, 2.2, 'O')  # bicep
     _ell(g, 34, 10.5, 2.2, 2.2, 'L')
-    l, r = (21, 29) if sp == 'cat' else (25, 30)  # eye x positions of the side head at hx=26
-    for x in range(l - 1, r + 3):  # sunglasses
-        _px(g, [(x, 9 if sp == 'cat' else 8)], 'N')
-    for x in (l - 1, l, l + 1, l + 2, r, r + 1, r + 2):
-        _px(g, [(x, y) for y in ((10, 11, 12) if sp == 'cat' else (9, 10, 11))], 'N')
-    _px(g, [(l, 10 if sp == 'cat' else 9), (r + 1, 10 if sp == 'cat' else 9)], 'S')
+    hx, hy = 26, 10.5  # side head position in _standing(shift=8)
+    el, er, ey = SIDE_EYES[sp]
+    top = int(hy + ey)
+    for x in range(int(hx + el) - 1, int(hx + er) + 3):  # sunglasses
+        _px(g, [(x, top - 1)], 'N')
+    for x0 in (int(hx + el), int(hx + er)):
+        _px(g, [(x, y) for x in range(x0 - 1, x0 + 3) for y in range(top, top + 3)], 'N')
+        _px(g, [(x0, top)], 'S')
     return _finish(g)
 
 
@@ -314,27 +360,194 @@ def _front_head_dog(g, eyes):
         _px(g, [(15, 17), (16, 17), (15, 18), (16, 18)], 'P')  # tongue out = happy
 
 
-HEADS = {'cat': (_head, _front_head_cat), 'dog': (_head_dog, _front_head_dog)}
+def _head_fox(g, hx, hy, eyes='open'):
+    """Fox 3/4 head: tall pointed ears, long pointed snout, white cheeks."""
+    _tri(g, (hx - 6, hy - 2), (hx - 4.5, hy - 11.5), (hx - 0.5, hy - 5), 'O')
+    _tri(g, (hx + 0.5, hy - 5.5), (hx + 4.5, hy - 11.5), (hx + 6.5, hy - 2), 'O')
+    _tri(g, (hx - 5.6, hy - 8.5), (hx - 4.5, hy - 11.5), (hx - 3.2, hy - 8.5), 'M')
+    _tri(g, (hx + 3.2, hy - 8.5), (hx + 4.5, hy - 11.5), (hx + 5.6, hy - 8.5), 'M')
+    _tri(g, (hx - 4.8, hy - 3.5), (hx - 4.3, hy - 8), (hx - 1.8, hy - 5), 'L')
+    _tri(g, (hx + 1.8, hy - 5), (hx + 4.3, hy - 8), (hx + 5.2, hy - 3.5), 'L')
+    _ell(g, hx, hy, 7, 6, 'O')
+    _tri(g, (hx + 2, hy - 1), (hx + 2, hy + 5), (hx + 9.5, hy + 2.5), 'O')
+    _tri(g, (hx + 1, hy + 2), (hx + 1, hy + 5.5), (hx + 9.5, hy + 2.8), 'L')
+    _ell(g, hx - 1, hy + 3.5, 4, 2.4, 'L')
+    _ell(g, hx + 9, hy + 2.2, 1.2, 1, 'E')
+    _eyes(g, [(int(hx) - 3, int(hy) - 2), (int(hx) + 2, int(hy) - 2)], eyes)
+
+
+def _front_head_fox(g, eyes):
+    _tri(g, (6.5, 9), (7.5, 0.3), (13.5, 4.5), 'O')
+    _tri(g, (18.5, 4.5), (24.5, 0.3), (25.5, 9), 'O')
+    _tri(g, (6.9, 3.5), (7.5, 0.3), (9.5, 2.2), 'M')
+    _tri(g, (22.5, 2.2), (24.5, 0.3), (25.1, 3.5), 'M')
+    _tri(g, (8.5, 7), (8.8, 3), (12.2, 4.8), 'L')
+    _tri(g, (19.8, 4.8), (23.2, 3), (23.5, 7), 'L')
+    _ell(g, 16, 11, 9, 7.3, 'O')
+    _ell(g, 10.5, 15, 4.2, 3, 'L')
+    _ell(g, 21.5, 15, 4.2, 3, 'L')
+    _tri(g, (12.5, 12.5), (19.5, 12.5), (16, 18.5), 'L')
+    _eyes(g, [(10, 8.5), (19, 8.5)], eyes)
+    _ell(g, 16, 16.2, 1.5, 1.1, 'E')
+    _px(g, [(15, 18), (16, 18)], 'K')
+
+
+def _head_rabbit(g, hx, hy, eyes='open'):
+    """Bunny 3/4 head: long ears laid back, round cheeks, twitchy pink nose."""
+    for base, tip in (((hx - 1.5, hy - 4), (hx - 6.5, hy - 11)), ((hx + 0.5, hy - 4.5), (hx - 3, hy - 12))):
+        _line(g, [base, tip], 2, 'O')
+        _line(g, [(base[0] - 0.4, base[1] - 1.2), (tip[0] + 0.3, tip[1] + 1)], 0.8, 'P')
+    _ell(g, hx, hy, 7, 6.3, 'O')
+    _ell(g, hx + 3, hy + 2.6, 3.8, 2.8, 'L')
+    _eyes(g, [(int(hx) - 2, int(hy) - 2), (int(hx) + 3, int(hy) - 2)], eyes)
+    _px(g, [(int(hx) + 6, int(hy) + 1)], 'P')
+    _px(g, [(int(hx) + 5, int(hy) + 4)], 'W')  # buck tooth
+    _px(g, [(int(hx) - 4, int(hy) + 3)], 'P')
+
+
+def _front_head_rabbit(g, eyes):
+    for base, tip in (((12, 6), (9.5, 0.5)), ((20, 6), (22.5, 0.5))):
+        _line(g, [base, tip], 2.1, 'O')
+        _line(g, [(base[0], base[1] - 1.5), (tip[0], tip[1] + 1)], 0.8, 'P')
+    _ell(g, 16, 11.5, 8.5, 7, 'O')
+    _ell(g, 16, 15, 4.6, 3, 'L')
+    _eyes(g, [(10, 9), (19, 9)], eyes)
+    _px(g, [(15, 13), (16, 13)], 'P')
+    _px(g, [(15, 16), (16, 16)], 'W')
+    _px(g, [(9, 14), (22, 14)], 'P')
+
+
+def _head_dragon(g, hx, hy, eyes='open'):
+    """Baby dragon 3/4 head: two horns, round snout, nostrils."""
+    _tri(g, (hx - 4, hy - 5), (hx - 7, hy - 11), (hx - 1.5, hy - 6), 'C')
+    _tri(g, (hx, hy - 6), (hx + 0.5, hy - 12), (hx + 3, hy - 5.5), 'C')
+    _ell(g, hx, hy, 7.5, 6.5, 'O')
+    _ell(g, hx + 4, hy + 2.3, 4.6, 3, 'O')
+    _ell(g, hx + 4, hy + 3.8, 4, 1.5, 'L')
+    _px(g, [(int(hx) + 7, int(hy) + 1)], 'D')
+    _eyes(g, [(int(hx) - 3, int(hy) - 2), (int(hx) + 2, int(hy) - 2)], eyes)
+    _px(g, [(int(hx) + 5, int(hy) + 5)], 'W')  # tiny fang
+    _px(g, [(int(hx) - 5, int(hy) + 3)], 'P')
+
+
+def _front_head_dragon(g, eyes):
+    _tri(g, (10, 6), (6.5, 0.3), (12.5, 4.5), 'C')
+    _tri(g, (19.5, 4.5), (25.5, 0.3), (22, 6), 'C')
+    _ell(g, 16, 11, 9, 7.3, 'O')
+    _ell(g, 16, 15.2, 5.5, 3.4, 'L')
+    _px(g, [(14, 14), (17, 14)], 'D')
+    _eyes(g, [(10, 8.5), (19, 8.5)], eyes)
+    _px(g, [(13, 17), (18, 17)], 'W')
+    _px(g, [(9, 14), (22, 14)], 'P')
+
+
+HEADS = {'cat': (_head, _front_head_cat), 'dog': (_head_dog, _front_head_dog),
+         'fox': (_head_fox, _front_head_fox), 'rabbit': (_head_rabbit, _front_head_rabbit),
+         'dragon': (_head_dragon, _front_head_dragon)}
+
+
+# ---------------------------------------------------------------- bird (own body plan)
+def _bird(pose='stand', eyes='open', wing=0.0, hop=0.0, shift=0):
+    """Round chibi bird, side view facing right. wing: -1 down .. 1 up (flight), hop: px off the ground."""
+    g = _blank(W + shift, W)
+    o, y = shift / 2, -hop
+    fly = pose == 'fly'
+    _tri(g, (10 + o, 21 + y), (10 + o, 25 + y), (2 + o, 27 + y), 'D')  # tail feathers
+    if fly or hop > 0.5:
+        _line(g, [(15 + o, 26 + y), (13 + o, 28 + y)], 0.6, 'Y')  # tucked legs
+        _line(g, [(18 + o, 26 + y), (16 + o, 28 + y)], 0.6, 'Y')
+    else:
+        for x in (14, 18):
+            _line(g, [(x + o, 25 + y), (x + o, 29.6)], 0.6, 'Y')
+            _line(g, [(x - 1 + o, 30), (x + 2 + o, 30)], 0.5, 'Y')
+    if fly:
+        _tri(g, (11 + o, 18 + y), (17 + o, 18 + y), (8 + o, 18 + y - 11 * wing), 'D')  # far wing
+    _ell(g, 16 + o, 19 + y, 8, 8.5, 'O')
+    _ell(g, 17.5 + o, 22 + y, 5, 5.3, 'L')
+    _line(g, [(18 + o, 11 + y), (16 + o, 6.5 + y), (14 + o, 6 + y)], 0.9, 'O')  # crest
+    _tri(g, (22.5 + o, 13.8 + y), (22.5 + o, 17.2 + y), (27.5 + o, 15.5 + y), 'Y')  # beak
+    _px(g, [(int(23 + o), int(15.5 + y))], 'M')
+    _eyes(g, [(int(17 + o), int(11 + y))], eyes)
+    _ell(g, 21 + o, 18 + y, 1.3, 0.9, 'P')
+    if fly:
+        _tri(g, (11 + o, 19 + y), (18 + o, 19 + y), (9 + o, 19 + y - 12 * wing), 'H')  # near wing
+    else:
+        _ell(g, 13 + o, 20 + y, 4.6, 3.6, 'D')  # folded wing
+    return g
+
+
+def _bird_front(eyes='open', arms='down'):
+    g = _blank()
+    _tri(g, (13, 25), (19, 25), (16, 31), 'D')
+    if arms == 'up':
+        _tri(g, (8, 20), (11, 17), (3, 6), 'D')
+        _tri(g, (24, 20), (21, 17), (29, 6), 'D')
+    _ell(g, 16, 18.5, 9, 9.5, 'O')
+    _ell(g, 16, 21.5, 5.5, 6, 'L')
+    _line(g, [(16, 9.5), (15, 5.5), (13, 5)], 0.9, 'O')
+    if arms == 'down':
+        _ell(g, 7.5, 20.5, 2.6, 5, 'D')
+        _ell(g, 24.5, 20.5, 2.6, 5, 'D')
+    _eyes(g, [(10, 11), (19, 11)], eyes)
+    _tri(g, (14.3, 15), (17.7, 15), (16, 18.5), 'Y')
+    _px(g, [(9, 16), (22, 16)], 'P')
+    for x in (13, 19):
+        _line(g, [(x, 27.5), (x, 29.8)], 0.6, 'Y')
+        _line(g, [(x - 1.5, 30), (x + 1.5, 30)], 0.5, 'Y')
+    return _finish(g)
+
+
+def _bird_flex():
+    g = _bird(shift=8)
+    _tri(g, (14, 16), (10, 20), (0.5, 4), 'D')
+    _tri(g, (22, 16), (26, 20), (39, 4), 'O')  # dramatically spread wings
+    _px(g, [(x, 10) for x in range(20, 25)] + [(x, y) for x in range(20, 24) for y in (11, 12)], 'N')
+    _px(g, [(21, 11)], 'S')
+    return _finish(g)
+
+
+def bird_frames():
+    f = {
+        'idle': _bird_front(), 'blink': _bird_front('closed'), 'happy': _bird_front('closed'),
+        'surprised': _bird_front('wide'), 'cinema': _bird_front(arms='up'), 'sit': _bird_front(),
+        'stand': _finish(_bird()), 'stand_blink': _finish(_bird(eyes='closed')),
+        'jump': _finish(_bird('fly', wing=1, hop=4)), 'stretch': _finish(_bird('fly', 'closed', wing=1)),
+        'sleep': _finish(_bird(eyes='closed', hop=-2)), 'flex': _bird_flex(),
+    }
+    for style, n in (('walk', 16), ('sneak', 16)):  # hopping
+        for i in range(n):
+            u = (i / n * 2) % 1.0
+            f['%s%d' % (style, i)] = _finish(_bird(hop=abs(math.sin(math.pi * u)) * (3.5 if style == 'walk' else 1.5)))
+    for i in range(12):  # flight: full wing beat
+        f['run%d' % i] = _finish(_bird('fly', wing=math.sin(2 * math.pi * i / 12), hop=2 + math.sin(2 * math.pi * i / 12)))
+    return f
+
+
 _DOG = str.maketrans('ODHL', 'Aahc')  # recolor cat fur chars to dog palette
 
 
 def frames(sp='cat'):
-    f = {
-        'idle': front(sp=sp), 'blink': front('closed', sp=sp), 'happy': front('closed', sp=sp),
-        'jump': jump(sp=sp),
-        'sit': sit(sp=sp), 'surprised': front('wide', sp=sp), 'stretch': jump('closed', sp=sp),
-        'sleep': sleep(sp=sp), 'flex': flex(sp=sp), 'cinema': front(arms='up', sp=sp),
-    }
-    for style in ('walk', 'run', 'sneak'):
-        for i in range(GAITS[style][0]):
-            f['%s%d' % (style, i)] = stand(style, i, sp=sp)
-    f['walk2'] = f['walk4']  # walk1/walk2: legacy two-frame names used by emotes and reactions.json
+    """All frames for a species, unprefixed names."""
+    if sp == 'bird':
+        f = bird_frames()
+    else:
+        f = {
+            'idle': front(sp=sp), 'blink': front('closed', sp=sp), 'happy': front('closed', sp=sp),
+            'stand': stand(sp=sp), 'stand_blink': stand(eyes='closed', sp=sp),
+            'jump': jump(sp=sp), 'sit': sit(sp=sp), 'surprised': front('wide', sp=sp),
+            'stretch': jump('closed', sp=sp), 'sleep': sleep(sp=sp), 'flex': flex(sp=sp),
+            'cinema': front(arms='up', sp=sp),
+        }
+        for style in ('walk', 'run', 'sneak'):
+            for i in range(GAITS[style][0]):
+                f['%s%d' % (style, i)] = stand(style, i, sp=sp)
+    f['walk1'], f['walk2'] = f['walk4'], f['walk12']  # legacy two-frame names (emotes, reactions.json)
     if sp == 'dog':
-        f = {'dog:' + k: [r.translate(_DOG) for r in v] for k, v in f.items()}
+        f = {k: [r.translate(_DOG) for r in v] for k, v in f.items()}
     return f
 
 
-# breed -> colors for the species' fur chars; first breed per species = base look (no prefix needed)
+# species -> breed -> (label, colors for the species' fur chars). None = use the generator's own chars.
 BREEDS = {
     'cat': {
         'tuxedo': ('Tuxedo (schwarz-weiß)', None),
@@ -352,8 +565,32 @@ BREEDS = {
         'black': ('Schwarzer Labrador', ('#2b2724', '#1b1816', '#433c37', '#3a342f', '#1b1816')),
         'white': ('Weißer Hund', ('#f4f2ee', '#cfcac2', '#ffffff', '#ffffff', '#2b2724')),
     },
+    'fox': {
+        'red': ('Rotfuchs', ('#e57a2e', '#b5561a', '#f5a05c', '#fff6ea', '#2b201c')),
+        'arctic': ('Polarfuchs', ('#eef1f4', '#c5ccd4', '#ffffff', '#ffffff', '#8a93a0')),
+        'silver': ('Silberfuchs', ('#4a4a55', '#30303a', '#6a6a78', '#e6e6ea', '#1c1c22')),
+        'fennec': ('Wüstenfuchs', ('#e8c48e', '#c09a62', '#f6dcae', '#fff8ec', '#b98a50')),
+    },
+    'rabbit': {
+        'wild': ('Wildkaninchen', ('#b8906a', '#8c6a4c', '#d4b08c', '#f8efe4')),
+        'white': ('Weißes Kaninchen', ('#f4f2ef', '#d3cdc5', '#ffffff', '#ffe4ec')),
+        'gray': ('Graues Kaninchen', ('#9a9aa2', '#6f6f78', '#babac2', '#f0f0f2')),
+        'black': ('Schwarzes Kaninchen', ('#2d2a30', '#1c1a1f', '#45414a', '#d8d4dc')),
+    },
+    'dragon': {
+        'green': ('Grüner Drache', ('#4caf6a', '#2f7d48', '#7fd18f', '#f1e7a8', '#8fd6a5')),
+        'red': ('Roter Drache', ('#d9453b', '#9e2a24', '#f07a6c', '#f7d08a', '#f2a08f')),
+        'purple': ('Lila Drache', ('#8a5cd6', '#5e3a9e', '#b291ee', '#f3e3ff', '#c4a6f2')),
+        'gold': ('Golddrache', ('#e0b13a', '#a87f1e', '#f5d46e', '#fff2c4', '#f2d27a')),
+    },
+    'bird': {
+        'budgie': ('Wellensittich blau', ('#5aa9e6', '#3a7fc0', '#8cc9f5', '#f4f8fb')),
+        'green': ('Wellensittich grün', ('#6cc04a', '#46902e', '#9bdc7c', '#f6f1a0')),
+        'canary': ('Kanarienvogel', ('#f5d63d', '#c9a91f', '#fbe98a', '#fff8d6')),
+        'robin': ('Rotkehlchen', ('#8a6a4f', '#5f4733', '#ab8b6d', '#e8743b')),
+    },
 }
-_FUR = {'cat': 'ODHL', 'dog': 'AahcM'}  # chars each breed palette replaces
+_FUR = {'cat': 'ODHL', 'dog': 'AahcM', 'fox': 'ODHLM', 'rabbit': 'ODHL', 'dragon': 'ODHLM', 'bird': 'ODHL'}
 
 
 def skin(species, breed):
@@ -368,13 +605,11 @@ FRAMES, EXTRA_PALETTE = {}, {}
 _next = 0x100  # breed colors get private chars above Latin-1 so they never clash with base palette chars
 for _sp, _breeds in BREEDS.items():
     _base = frames(_sp)
-    FRAMES.update(_base)
     for _br, (_label, _cols) in _breeds.items():
-        if not _cols:
-            continue
-        _chars = ''.join(chr(_next + i) for i in range(len(_cols)))
-        EXTRA_PALETTE.update(zip(_chars, _cols))
-        _next += len(_cols)
-        _tr = str.maketrans(_FUR[_sp], _chars)
+        if _cols:
+            _chars = ''.join(chr(_next + i) for i in range(len(_cols)))
+            EXTRA_PALETTE.update(zip(_chars, _cols))
+            _next += len(_cols)
+            _tr = str.maketrans(_FUR[_sp], _chars)
         for _k, _v in _base.items():
-            FRAMES[skin(_sp, _br) + _k.split(':')[-1]] = [r.translate(_tr) for r in _v]
+            FRAMES[skin(_sp, _br) + _k] = [r.translate(_tr) for r in _v] if _cols else _v

@@ -38,6 +38,36 @@ class Species(unittest.TestCase):
                     if it[0] == 'sprite' and it[1] in SIZES and not it[1].startswith('dog:'):
                         self.assertNotIn(it[1], ('idle', 'walk1', 'sit', 'flex', 'cinema', 'sleep'))
 
+    def test_every_species_and_breed_has_all_frames_and_scenes_run(self):
+        from tinypaws.sprites import BREEDS, skin
+        needed = {'idle', 'stand', 'stand_blink', 'blink', 'happy', 'surprised', 'jump', 'sit', 'stretch',
+                  'sleep', 'flex', 'cinema', 'walk1', 'walk2'} | {'%s%d' % (st, i) for st, (n, _, _) in brain.GAITS.items()
+                                                                  for i in range(n)}
+        for sp in BREEDS:
+            for br in BREEDS[sp]:
+                for name in needed:
+                    self.assertIn(skin(sp, br) + name, SIZES, (sp, br, name))
+            p = brain.Pet(W, H, scale=S, rng=random.Random(2), species=sp)
+            for a in (brain.HypeTrain(2), brain.GigaChad(), brain.Cinema(), brain.Walk(10, speed=3, prio=brain.P_USER)):
+                p.play(a)
+                for _ in range(30 * 25):
+                    p.update(1 / 30)
+                    for it in p.render():
+                        if it[0] == 'sprite':
+                            self.assertIn(it[1], SIZES)
+
+    def test_flyers_fly_when_running(self):
+        for sp, flies in (('bird', True), ('dragon', True), ('cat', False)):
+            p = brain.Pet(W, H, scale=S, species=sp)
+            p.x = 100
+            a = brain.Walk(1500, style='run', prio=brain.P_USER)
+            p.play(a)
+            lowest = p.floor
+            for _ in range(100):
+                a.update(p, 1 / 30)
+                lowest = min(lowest, p.y)
+            self.assertEqual(lowest < p.floor - 10, flies, sp)
+
     def test_unknown_species_falls_back(self):
         self.assertEqual(brain.Pet(W, H, species='kraken').species, 'cat')
 

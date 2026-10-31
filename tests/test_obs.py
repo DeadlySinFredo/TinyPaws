@@ -15,6 +15,18 @@ class Obs(unittest.TestCase):
             self.assertIn(b'<canvas', urllib.request.urlopen(base).read())
             assets = json.load(urllib.request.urlopen(base + 'sprites.json'))
             self.assertIn('loco', assets['sprites'])
+            self.assertIn('idle', assets['sprites'])
+            self.assertFalse(any(':' in k for k in assets['sprites']))  # only the active pet
+        finally:
+            srv.close()
+        srv = ObsServer(port=0, skin='dog/husky:')
+        try:
+            base = 'http://127.0.0.1:%d/' % srv.port
+            names = json.load(urllib.request.urlopen(base + 'sprites.json'))['sprites']
+            self.assertIn('dog/husky:run3', names)
+            self.assertIn('loco', names)
+            self.assertNotIn('idle', names)
+            self.assertNotIn('fox:idle', names)
             pet = brain.Pet(800, 300, scale=3)
             pet.play(brain.Cinema())
             pet.update(0.1)

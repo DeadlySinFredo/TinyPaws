@@ -30,8 +30,9 @@ def load(path=None):
             cfg[k] = DEFAULTS[k]
     cfg['name'] = str(cfg['name'])[:24] or DEFAULTS['name']
     cfg['twitch_channel'] = str(cfg['twitch_channel']).strip().lstrip('#').lower()[:25]
-    cfg['animal'] = cfg['animal'] if cfg['animal'] in ('cat', 'dog') else 'cat'
     from .sprites import BREEDS  # lazy: keep settings importable without building sprites
+    if cfg['animal'] not in BREEDS:
+        cfg['animal'] = 'cat'
     if cfg['breed'] not in BREEDS[cfg['animal']]:
         cfg['breed'] = next(iter(BREEDS[cfg['animal']]))
     cfg['lang'] = cfg['lang'] if cfg['lang'] in ('de', 'en') else 'de'

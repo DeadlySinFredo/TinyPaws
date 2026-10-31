@@ -1,6 +1,6 @@
 # TinyPaws
 
-Kleine Pixel-Katze (oder Hund, je 6 Rassen), die auf deinem Desktop lebt – läuft herum, schläft, springt, macht Unsinn
+Kleine Pixel-Tiere (Katze, Hund, Fuchs, Hase, Drache, Vogel – je 4–6 Rassen), die auf deinem Desktop lebt – läuft herum, schläft, springt, macht Unsinn
 und reagiert (später) auf Twitch/Kick/YouTube/TikTok-Events. Ohne KI, ~1 % CPU, ~100 MB RAM.
 
 *A tiny pixel cat living on your desktop. No AI required. German/English UI.*

@@ -58,19 +58,20 @@ class Action:
 class Idle(Action):
     prio = P_IDLE
 
-    def __init__(self, dur=2.0, frame='idle', prio=None):
+    def __init__(self, dur=2.0, frame='stand', prio=None):
         super().__init__(prio)
         self.dur, self.frame = dur, frame
 
     def step(self, pet, dt):
         pet.y = pet.floor
-        blink = self.frame == 'idle' and (self.t % 3.1) < 0.15
-        pet.frame = 'blink' if blink else self.frame
+        blink = {'idle': 'blink', 'stand': 'stand_blink'}.get(self.frame)
+        pet.frame = blink if blink and (self.t % 3.1) < 0.15 else self.frame
         return self.t >= self.dur
 
 
 # gait style -> (frames, logical units/s, seconds per cycle); speed/cycle chosen so paws don't slide
-GAITS = {'walk': (8, 12, 0.55), 'run': (6, 36, 0.42), 'sneak': (8, 6, 0.85)}
+GAITS = {'walk': (16, 12, 0.55), 'run': (12, 36, 0.42), 'sneak': (16, 6, 0.85)}
+FLYERS = ('bird', 'dragon')  # their 'run' is flight: arc through the air
 
 
 def gait_frame(style, t):
@@ -84,8 +85,14 @@ class Walk(Action):
         self.tx = tx
         self.style = style or ('run' if speed >= 2 else 'sneak' if speed < 0.75 else 'walk')
 
+    def start(self, pet):
+        self.x0 = pet.x
+
     def step(self, pet, dt):
         pet.y = pet.floor
+        if self.style == 'run' and pet.species in FLYERS:
+            p = 1 - abs(self.tx - pet.x) / max(1.0, abs(self.tx - self.x0))
+            pet.y -= min(pet.H * 0.4, 30 * pet.s) * math.sin(math.pi * p)
         v = GAITS[self.style][1] * pet.s
         d = self.tx - pet.x
         if abs(d) <= v * dt:
@@ -470,6 +477,7 @@ class Pet:
             (4.0, lambda: Walk(r.uniform(0, self.maxx))),
             (3.0, lambda: Idle(r.uniform(1.5, 4.0))),
             (1.2, lambda: Idle(r.uniform(2.0, 5.0), frame='sit')),
+            (1.2, lambda: Idle(r.uniform(2.0, 5.0), frame='idle')),  # sit facing the viewer
             (0.7 * L, lambda: Sleep(r.uniform(8, 20))),
             (1.0 * L, lambda: Jump()),
             (0.5 * L, lambda: Walk(r.uniform(0, self.maxx), style='run')),
@@ -557,7 +565,8 @@ def make_action(spec, pet, user=''):
 
 
 THANKS = {'de': 'Danke', 'en': 'Thanks'}
-SPECIES = {'cat': 'Miau!', 'dog': 'Wuff!'}  # species -> its sound
+SPECIES = {'cat': 'Miau!', 'dog': 'Wuff!', 'fox': 'Ring-ding-ding!', 'rabbit': '*mümmel*',
+           'dragon': 'Rawr!', 'bird': 'Piep piep!'}  # species -> its sound
 
 
 def handle_event(pet, engine, ev, force=False):

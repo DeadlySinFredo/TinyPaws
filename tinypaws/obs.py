@@ -8,7 +8,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .sprites import DENSITY, PALETTE, SPRITES
+from .sprites import DENSITY, FRAMES, PALETTE, SPRITES
 
 PAGE = r"""<!doctype html><meta charset="utf-8"><title>TinyPaws OBS</title>
 <style>html,body{margin:0;background:transparent;overflow:hidden}canvas{width:100vw;height:100vh;object-fit:contain;image-rendering:pixelated}</style>
@@ -43,10 +43,14 @@ new EventSource('stream').onmessage=e=>draw(JSON.parse(e.data))});
 
 
 class ObsServer:
-    def __init__(self, port=8737, fps=30):
+    def __init__(self, port=8737, fps=30, skin=''):
         self.fps, self.frame, self.seq = fps, '{"w":1,"h":1,"s":1,"items":[]}', 0
         self.cond = threading.Condition()
-        assets = json.dumps({'sprites': SPRITES, 'palette': PALETTE, 'density': DENSITY}).encode()
+        # only props + the active pet's frames: all species/breeds would be ~9 MB
+        sprites = {k: v for k, v in SPRITES.items() if (k.startswith(skin) if k in FRAMES else ':' not in k)}
+        if not skin:
+            sprites = {k: v for k, v in sprites.items() if ':' not in k}
+        assets = json.dumps({'sprites': sprites, 'palette': PALETTE, 'density': DENSITY}).encode()
         srv = self
 
         class H(BaseHTTPRequestHandler):

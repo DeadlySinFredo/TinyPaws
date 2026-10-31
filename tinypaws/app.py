@@ -210,7 +210,8 @@ class SettingsDialog(QDialog):
         self.name = QLineEdit(cfg['name'])
         self.name.setMaxLength(24)
         self.animal = QComboBox()
-        for sp, label in (('cat', 'Katze'), ('dog', 'Hund')):
+        for sp, label in (('cat', 'Katze'), ('dog', 'Hund'), ('fox', 'Fuchs'), ('rabbit', 'Hase'),
+                          ('dragon', 'Drache'), ('bird', 'Vogel')):
             for br, (name, _) in BREEDS[sp].items():
                 self.animal.addItem('%s – %s' % (label, name), '%s/%s' % (sp, br))
         self.animal.setCurrentIndex(max(0, self.animal.findData('%s/%s' % (cfg['animal'], cfg['breed']))))
@@ -326,7 +327,7 @@ class TinyPaws:
         self.panel, self.obs = None, None
         if cfg['obs']:
             try:
-                self.obs = ObsServer(cfg['obs_port'], cfg['fps'])
+                self.obs = ObsServer(cfg['obs_port'], cfg['fps'], skin(cfg['animal'], cfg['breed']))
             except OSError as e:  # port taken: desktop pet still works
                 print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
         self.twitch = None
