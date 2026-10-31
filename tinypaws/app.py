@@ -711,9 +711,8 @@ class TinyPaws:
             self.panel.sync_animal()
         if self.home:
             self.home.refresh()
-        if self.obs:  # the OBS page only has the old pet's frames; serve the new set
-            self.obs.close()
-            self.obs = ObsServer(self.cfg['obs_port'], self.cfg['fps'], new_skin)
+        if self.obs:  # connected OBS pages pick up the new sprite set by themselves
+            self.obs.set_skin(new_skin)
 
     # ---------------------------------------------------------------- pet packs
     def import_pack(self):

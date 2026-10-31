@@ -270,6 +270,14 @@ class Memes(unittest.TestCase):
                     self.fail('%s/%s never finished' % (sp, name))
                 self.assertTrue(0 <= p.x <= p.maxx and p.y == p.floor, (sp, name, p.x, p.y))
 
+    def test_visitor_is_a_base_breed(self):
+        from tinypaws.sprites import BREEDS
+        for seed in range(20):
+            p = brain.Pet(W, H, scale=S, rng=random.Random(seed))
+            m = brain.Meme('visitor', prio=brain.P_USER)
+            p.play(m)
+            self.assertIn(m.visitor, {brain.visitor_skin(sp) for sp in BREEDS if sp != 'cat'})
+
     def test_exit_comes_back_home(self):
         p = pet()
         p.x = 700

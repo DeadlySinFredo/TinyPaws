@@ -55,7 +55,8 @@ Format und Regeln: [docs/PET_PACKS.md](docs/PET_PACKS.md).
 
 Tray-Menü → **„OBS-Link kopieren“** (schaltet die Quelle bei Bedarf ein). In OBS: Quelle **Browser**, Link einfügen,
 Breite/Höhe = deine Bildschirmauflösung (ohne Taskleiste). Hintergrund ist transparent, alles läuft synchron
-zur Desktop-Katze. Server lauscht nur auf localhost.
+zur Desktop-Katze. Server lauscht nur auf localhost. Tierwechsel und App-Neustarts übernimmt die geöffnete
+Quelle von selbst (kein „Aktualisieren“ in OBS nötig).
 
 ## Twitch
 

@@ -2,13 +2,20 @@
 
 The Qt loop calls publish() with the same draw items the desktop renderer gets;
 browsers receive them via Server-Sent Events. Bound to localhost only.
+
+The server lives as long as the app. A pet switch swaps the sprite set in place (set_skin):
+every frame carries the sprite-set version, and the page reloads sprites.json when the
+version changes, never drawing a frame with a sprite set it does not match. Keepalive pings
+plus a page-side watchdog reconnect after server restarts or network hiccups.
 """
 import json
+import os
+import re
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .sprites import DENSITY, FRAMES, PALETTE, SPRITES
+from .sprites import BREEDS, DENSITY, FRAMES, PALETTE, SPRITES, skin as skin_of
 
 PAGE = r"""<!doctype html><meta charset="utf-8"><title>TinyPaws OBS</title>
 <style>html,body{margin:0;background:transparent;overflow:hidden}canvas{width:100vw;height:100vh;object-fit:contain;image-rendering:pixelated}</style>
@@ -39,21 +46,30 @@ g.lineTo(cx+R*Math.cos(b-0.1),cy+R*Math.sin(b-0.1));g.lineTo(cx+R*Math.cos(b+0.1
 else if(k=='spot'){const[,cx,top,bot,wt,wb,a]=it,gr=g.createLinearGradient(0,top,0,bot);
 gr.addColorStop(0,`rgba(255,250,220,${0.08*a})`);gr.addColorStop(1,`rgba(255,250,220,${0.43*a})`);
 g.fillStyle=gr;g.beginPath();g.moveTo(cx-wt,top);g.lineTo(cx+wt,top);g.lineTo(cx+wb,bot);g.lineTo(cx-wb,bot);g.fill()}}}
-fetch('sprites.json').then(r=>r.json()).then(d=>{S=d.sprites;P=d.palette;D=d.density;
-new EventSource('stream').onmessage=e=>draw(JSON.parse(e.data))});
+let ver=null,loading=false,last=null,es=null,seen=0;
+function load(){if(loading)return;loading=true;
+fetch('sprites.json',{cache:'no-store'}).then(r=>r.json()).then(d=>{S=d.sprites;P=d.palette;D=d.density;cache={};
+ver=d.version;loading=false;if(last&&last.v===ver)draw(last)}).catch(()=>{loading=false;setTimeout(load,1000)})}
+function onFrame(f){last=f;if(f.v!==ver){load();return}draw(f)}
+function connect(){if(es)es.close();seen=Date.now();es=new EventSource('stream');
+es.onmessage=e=>{seen=Date.now();onFrame(JSON.parse(e.data))};
+es.addEventListener('ping',()=>{seen=Date.now()})}
+setInterval(()=>{if(Date.now()-seen>6000)connect()},2000);
+connect();
 </script>"""
 
 
+VISITOR_FRAME = re.compile(r'^(idle|walk\d+)$')
+
+
 class ObsServer:
+    PING = 2.0  # seconds of silence before a keepalive (page watchdog reconnects after 6 s)
+
     def __init__(self, port=8737, fps=30, skin=''):
-        self.fps, self.frame, self.seq = fps, '{"w":1,"h":1,"s":1,"items":[]}', 0
+        self.fps, self.seq, self.n = fps, 0, 0
+        self.boot = '%x' % (int(time.time() * 1000) ^ os.getpid())  # versions stay unique across app restarts
         self.cond = threading.Condition()
-        # only props + the active pet's frames: all species/breeds would be ~9 MB
-        pet = lambda k: k in FRAMES or k.startswith('pack/')  # noqa: E731
-        sprites = {k: v for k, v in SPRITES.items() if (k.startswith(skin) if pet(k) else ':' not in k)}
-        if not skin:
-            sprites = {k: v for k, v in sprites.items() if ':' not in k}
-        assets = json.dumps({'sprites': sprites, 'palette': PALETTE, 'density': DENSITY}).encode()
+        self.set_skin(skin)
         srv = self
 
         class H(BaseHTTPRequestHandler):
@@ -63,6 +79,7 @@ class ObsServer:
             def _send(self, body, ctype):
                 self.send_response(200)
                 self.send_header('Content-Type', ctype)
+                self.send_header('Cache-Control', 'no-store')
                 self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
@@ -72,6 +89,8 @@ class ObsServer:
                 if path == '/':
                     self._send(PAGE.encode(), 'text/html; charset=utf-8')
                 elif path == '/sprites.json':
+                    with srv.cond:
+                        assets = srv.assets
                     self._send(assets, 'application/json')
                 elif path == '/stream':
                     self.send_response(200)
@@ -80,11 +99,15 @@ class ObsServer:
                     self.end_headers()
                     seen = -1
                     try:
+                        self.wfile.write(b'retry: 2000\n\n')  # browser auto-retry pace
                         while srv.httpd:
                             with srv.cond:
-                                srv.cond.wait_for(lambda: srv.seq != seen, timeout=15)
+                                fresh = srv.cond.wait_for(lambda: srv.seq != seen, timeout=srv.PING)
                                 seen, data = srv.seq, srv.frame
-                            self.wfile.write(b'data: ' + data.encode() + b'\n\n')
+                            if fresh:
+                                self.wfile.write(b'data: ' + data.encode() + b'\n\n')
+                            else:
+                                self.wfile.write(b'event: ping\ndata: 1\n\n')
                             self.wfile.flush()
                             time.sleep(1 / srv.fps)  # cap per-client rate
                     except (BrokenPipeError, ConnectionResetError):
@@ -98,8 +121,28 @@ class ObsServer:
         self.port = self.httpd.server_address[1]
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
+    def set_skin(self, skin):
+        """Swap the served sprite set (pet switch) without dropping connected pages."""
+        # only props + the active pet's frames: all species/breeds would be ~9 MB
+        # prefixed keys belong to a pet skin (incl. HD in-between frames); unprefixed ones are props or the base cat
+        sprites = {k: v for k, v in SPRITES.items()
+                   if ((bool(skin) and k.startswith(skin)) if ':' in k else not skin or k not in FRAMES)}
+        # visiting animals (meme 'visitor') are base breeds walking in: ship their idle + walk frames too
+        for sp in BREEDS:
+            pre = skin_of(sp, next(iter(BREEDS[sp])))
+            sprites.update({k: v for k, v in SPRITES.items()
+                            if k.startswith(pre) and VISITOR_FRAME.match(k[len(pre):]) and (pre or ':' not in k)})
+        with self.cond:
+            self.n += 1
+            self.version = '%s-%d' % (self.boot, self.n)
+            self.assets = json.dumps({'version': self.version, 'sprites': sprites, 'palette': PALETTE,
+                                      'density': DENSITY}).encode()
+            self.frame = json.dumps({'v': self.version, 'w': 1, 'h': 1, 's': 1, 'items': []})
+            self.seq += 1
+            self.cond.notify_all()
+
     def publish(self, w, h, scale, items):
-        data = json.dumps({'w': w, 'h': h, 's': scale, 'items': items}, separators=(',', ':'))
+        data = json.dumps({'v': self.version, 'w': w, 'h': h, 's': scale, 'items': items}, separators=(',', ':'))
         with self.cond:
             if data != self.frame:
                 self.frame, self.seq = data, self.seq + 1
