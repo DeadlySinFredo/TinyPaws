@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 DEFAULTS = dict(name='Mochi', animal='cat', scale=4, fps=30, random_level=1.0, lang='de',
-                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, first_run_done=False)
+                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', first_run_done=False)
 
 
 def config_dir():
@@ -29,6 +29,7 @@ def load(path=None):
         except (TypeError, ValueError):
             cfg[k] = DEFAULTS[k]
     cfg['name'] = str(cfg['name'])[:24] or DEFAULTS['name']
+    cfg['twitch_channel'] = str(cfg['twitch_channel']).strip().lstrip('#').lower()[:25]
     cfg['lang'] = cfg['lang'] if cfg['lang'] in ('de', 'en') else 'de'
     if cfg['x'] is not None and not isinstance(cfg['x'], (int, float)):
         cfg['x'] = None

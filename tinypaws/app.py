@@ -13,6 +13,7 @@ import time
 from . import brain, settings
 from .obs import ObsServer
 from .reactions import ChatEngine
+from .twitch import TwitchChat, valid_channel
 from .sprites import PALETTE, SPRITES
 
 TR = {
@@ -25,7 +26,7 @@ TR = {
                autostart='Beim Login starten', screen='Monitor', poems='GigaChad-Gedichte',
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', events='Stream-Events (Simulation)', chat='Chat-Simulation',
-               actions='Aktionen', obs='OBS-Browser-Quelle'),
+               actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)'),
     'en': dict(panel='Test panel', settings='Settings', interact='Interaction (drag)', quit='Quit',
                walk='Walk', run='Run', jump='Jump', sleep='Sleep', sit='Sit', dance='Dance',
                teleport='Teleport', pizza='Pizza', coffee='Coffee', ball='Ball', hype='Hype Train',
@@ -35,7 +36,7 @@ TR = {
                autostart='Start on login', screen='Monitor', poems='GigaChad poems',
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', events='Stream events (simulated)', chat='Chat simulation',
-               actions='Actions', obs='OBS browser source'),
+               actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)'),
 }
 DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 'Mausi', 'TurboTom',
               'Keksi', 'ZugFan', 'Lenny']
@@ -222,10 +223,12 @@ class SettingsDialog(QDialog):
         self.screen.setCurrentIndex(min(cfg['screen'], self.screen.count() - 1))
         self.autostart = QCheckBox(checked=cfg['autostart'])
         self.poems = QCheckBox(checked=cfg['poems'])
+        self.twitch = QLineEdit(cfg['twitch_channel'])
+        self.twitch.setPlaceholderText('z.B. papaplatte')
         self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
         for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -237,6 +240,7 @@ class SettingsDialog(QDialog):
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
                     autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(),
+                    twitch_channel=self.twitch.text().strip().lstrip('#').lower(),
                     first_run_done=True)
 
 
@@ -319,6 +323,9 @@ class TinyPaws:
                 self.obs = ObsServer(cfg['obs_port'], cfg['fps'])
             except OSError as e:  # port taken: desktop pet still works
                 print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
+        self.twitch = None
+        if valid_channel(cfg['twitch_channel']):
+            self.twitch = TwitchChat(cfg['twitch_channel'])
         self._build_menu()
         self.last = time.monotonic()
         self.timer = QTimer()
@@ -344,7 +351,10 @@ class TinyPaws:
         m.addAction(self.t('quit'), self.quit)
         self.menu = m
         self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap('idle')))
-        self.tray.setToolTip('TinyPaws – %s' % self.cfg['name'])
+        tip = 'TinyPaws – %s' % self.cfg['name']
+        if self.cfg['twitch_channel']:
+            tip += '\nTwitch: #%s' % self.cfg['twitch_channel']
+        self.tray.setToolTip(tip)
         self.tray.setContextMenu(m)
         self.tray.activated.connect(lambda r: self.show_panel() if r == QSystemTrayIcon.Trigger else None)
         self.tray.show()
@@ -366,6 +376,11 @@ class TinyPaws:
             self.raise_t = 0
             self.overlay.raise_()
             self.handle.raise_()
+        if self.twitch:
+            for _ in range(20):  # bounded per tick; engine cooldowns decide what the pet reacts to
+                if self.twitch.events.empty():
+                    break
+                brain.handle_event(pet, self.engine, self.twitch.events.get_nowait())
         pet.update(dt)
         items = pet.render()
         if items != self.items:
@@ -452,6 +467,8 @@ class TinyPaws:
         settings.save(self.cfg)
         if self.obs:
             self.obs.close()
+        if self.twitch:
+            self.twitch.close()
         self.app.quit()
 
 

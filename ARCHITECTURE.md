@@ -11,6 +11,7 @@ Die Logik ist Qt-frei und damit portierbar (z. B. Rust/Tauri oder Browser-Overla
 | `tinypaws/reactions.py` + `.json` | Chat Reaction Engine ohne KI: Regex, Chance, Regel-/globaler Cooldown, Längenlimit, kaputte Regeln werden übersprungen. |
 | `tinypaws/settings.py` | Validierte JSON-Einstellungen (atomar geschrieben), XDG-Autostart. |
 | `tinypaws/obs.py` | OBS-Browser-Quelle: `ThreadingHTTPServer` auf 127.0.0.1, Seite + `sprites.json` + SSE-Stream der Draw-Items. |
+| `tinypaws/twitch.py` | Anonymer Twitch-IRC-Client (TLS, `justinfan`), Parser → einheitliche Events, Reconnect mit Backoff, Queue max. 200; Kanalname wird validiert (kein IRC-Injection). |
 | `tinypaws/app.py` | Qt-Frontend: Renderer, Overlay, Handle, Tray, Testpanel, Einrichtungsassistent, DE/EN. |
 
 ## Prioritäten

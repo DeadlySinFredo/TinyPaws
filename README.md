@@ -31,6 +31,13 @@ Einstellungen → „OBS-Browser-Quelle" aktivieren. In OBS: Quelle **Browser**,
 Breite/Höhe = deine Bildschirmauflösung (ohne Taskleiste). Hintergrund ist transparent, alles läuft synchron
 zur Desktop-Katze. Server lauscht nur auf localhost.
 
+## Twitch
+
+Einstellungen → „Twitch-Kanal (nur lesen)“ → Kanalname eintragen. Anonymer Lesezugang über Twitch-IRC,
+**kein Login, kein Token**. Erkannt: Chat, Abos/Resubs, Geschenk-Abos, Bits, Raids. Automatischer
+Reconnect mit Backoff. Hype Train braucht EventSub + OAuth (kommt später) – bis dahin über Chat
+„hype train“ oder das Testpanel.
+
 ## Chat-Reaktionen
 
 Regeln in [`tinypaws/reactions.json`](tinypaws/reactions.json): Regex-Muster, Chance, Cooldown,

@@ -8,10 +8,11 @@
 - Hype Train, GigaChad, Absolute Cinema über Testpanel, Tray und Chat-Simulation.
 - Einstellungen + Position werden gespeichert und beim Start wiederhergestellt; Autostart per XDG.
 - OBS-Browser-Quelle `http://127.0.0.1:8737/` (in Einstellungen aktivierbar), live im Browser geprüft: Katze erscheint transparent und synchron.
+- Twitch-Chat anonym: live mit 5 öffentlichen Kanälen verbunden, Chatnachrichten empfangen.
 - Gemessen: ~1 % CPU (30 FPS, 1 Kern), ~100 MB RSS; im Schlaf 8 FPS.
 
 ## Getestet
-- `python3 -m unittest discover -s tests -t .` – 20 Tests (inkl. OBS-Server: Seite, Assets, Stream, 404): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
+- `python3 -m unittest discover -s tests -t .` – 26 Tests (inkl. OBS-Server und Twitch-Parser/Validierung): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
 - `scripts/render_preview.py` rendert Szenen offscreen als PNG (visuell geprüft).
 - Live-Start + Screenshot auf dem Desktop.
 
@@ -24,4 +25,4 @@ Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes
 - Settings-Änderung startet den Prozess neu.
 
 ## Nächste Schritte
-1. Twitch-Connector. 2. Hund + Vogel. 3. Mehr Memes.
+1. Twitch EventSub (Hype Train/Follows). 2. Hund + Vogel. 3. Mehr Memes.

@@ -4,7 +4,7 @@
 - [~] **Phase 2** – Animation Engine (fertig: Prioritäten, Queue, Partikel) · weitere Tierarten (Hund, Vogel, Fuchs, Hase, Drache) offen.
 - [~] **Phase 3** – Gegenstände: Pizza, Banane, Kaffee, Popcorn, Ball, Sessel, Lok, Waggons fertig · Karton, Kratzbaum, Kissen, Bett, Fernseher … offen.
 - [x] **Phase 4** – Chat Reaction Engine ohne KI (33 Regeln, JSON) · Ziel 100+ Regeln.
-- [ ] **Phase 5** – Twitch (EventSub + IRC), Kick, YouTube Live, TikTok – mit Reconnect, Rate-Limits, sicherer Tokenablage (Secret Service/libsecret).
+- [~] **Phase 5** – Twitch-Chat anonym (IRC: Chat, Abo, Geschenk-Abo, Bits, Raid, Reconnect, begrenzte Queue) fertig · offen: Twitch EventSub/OAuth (Hype Train, Follows), Twitch (EventSub + IRC), Kick, YouTube Live, TikTok – mit Reconnect, Rate-Limits, sicherer Tokenablage (Secret Service/libsecret).
 - [x] **Phase 6** – Hype Train (Level 1–10, Waggons, Namen, Rauch, Regenbogen-Rauch, Hupe, Feier), GigaChad (Kopfdrehung, Strahlen, Pose, eigene Gedichte DE/EN), Absolute Cinema (Sessel, Spotlight, Filmstreifen, Popcorn).
 - [x] **Phase 7** – OBS-Browser-Quelle: lokaler HTTP-Server (nur 127.0.0.1) + SSE, Canvas-Renderer der gleichen Draw-Items, transparent, skalierbar. Offen: eigene Welt-Größe/mehrere Tiere nur für OBS.
 - [ ] **Phase 8** – Weitere Memes (This is Fine mit Flammen, Bonk-Hammer, Kochmütze, Koffer-Exit, Cat Distribution System …).
