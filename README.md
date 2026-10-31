@@ -76,7 +76,8 @@ Reconnect mit Backoff.
    twitch.tv/activate – dort bestätigen. Kein Passwort geht durch TinyPaws. Der Chat deines Kanals wird
    automatisch mit verbunden.
 
-Der Zugangsschlüssel liegt danach verschlüsselt im System-Schlüsselbund (Secret Service/KWallet),
+Der Zugangsschlüssel liegt danach im System-Schlüsselbund (Linux: Secret Service/KWallet, macOS: Schlüsselbund,
+Windows: Anmeldeinformationsverwaltung),
 nicht in einer Datei. Dann kommen Hype Train (Start, Level-Up, Ende), Follows, Abos, Geschenk-Abos,
 Bits und Raids über Twitch EventSub; Abmelden über das Tray-Menü.
 
