@@ -6,7 +6,7 @@ pkgrel=1
 pkgdesc='Pixel desktop pet & stream companion (cat, dog, fox, rabbit, dragon, bird)'
 arch=('any')
 url='https://github.com/DeadlySinFredo/TinyPaws'
-license=('unknown')  # no project license chosen yet
+license=('MIT')
 depends=('python' 'pyside6')
 optdepends=('libsecret: keep the Twitch login in the system keyring'
             'xorg-xwayland: always-on-top pet on KDE Wayland')
@@ -46,4 +46,5 @@ Icon=tinypaws
 Categories=Game;Amusement;
 DESK
   install -Dm644 docs/PET_PACKS.md "$pkgdir/usr/share/doc/tinypaws/PET_PACKS.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

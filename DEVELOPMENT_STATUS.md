@@ -35,7 +35,6 @@ Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes
 
 ## Technische Einschränkungen
 - Windows/macOS-Pakete sind unsigniert (Warnung beim ersten Start). Twitch-Token ohne `secret-tool` (Windows/macOS) nur im Speicher → nach Neustart neu verbinden. Fensterklettern nur KDE.
-- Projekt hat noch keine Lizenz (PKGBUILD: `unknown`).
 - Fensterklettern nur unter KDE Plasma: ein KWin-Skript wird zur Laufzeit geladen (keine dauerhafte KWin-Änderung) und meldet Fenstergeometrien per D-Bus; beim Beenden (auch SIGTERM) wird es entladen. Bei Bildschirmskalierung ≠ 100 % können XWayland- und KWin-Koordinaten abweichen (ungetestet).
 - Native Wayland: KWin verbietet Positionierung/„immer oben" → XWayland. Vollbild-Spiele können die Katze überdecken.
 - Fenster-Raise alle 2 s: ganz kurz kann ein neu geöffnetes Fenster über der Katze liegen.

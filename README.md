@@ -84,3 +84,7 @@ python3 scripts/render_preview.py preview.png   # Szenen offscreen als PNG rende
 ```
 
 Siehe [ARCHITECTURE.md](ARCHITECTURE.md), [ROADMAP.md](ROADMAP.md), [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
+
+## Lizenz
+
+MIT – siehe [LICENSE](LICENSE). Alle Grafiken, Texte und Gedichte sind eigene Werke.
