@@ -44,7 +44,9 @@ DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 
 
 MEME_NAMES = {'thisisfine': 'This is Fine', 'bonk': 'Bonk', 'cook': 'Let Him Cook', 'exit': 'Dramatic Exit',
               'achievement': 'Achievement', 'rip': 'RIP', 'sus': 'Sus', 'cds': 'Cat Distribution',
-              'party': 'Tanz-Party', 'brainrot': 'Brainrot', 'scare': 'Schreckmoment'}
+              'party': 'Tanz-Party', 'brainrot': 'Brainrot', 'scare': 'Schreckmoment', 'scratch': 'Kratzbaum',
+              'pillow': 'Kissen', 'bed': 'Bett', 'tv': 'Fernseher', 'boxsit': 'Karton', 'yarn': 'Wollknäuel',
+              'mousechase': 'Mausjagd', 'bone': 'Knochen', 'visitor': 'Besuch'}
 
 
 def _platform_setup():

@@ -36,7 +36,15 @@
     {"id": "cds", "patterns": ["cat distribution", "katzenverteil"], "prio": 60, "chance": 1, "cooldown": 30, "action": {"type": "meme", "name": "cds"}},
     {"id": "party", "patterns": ["rickroll", "never gonna", "\\bparty\\b", "🎉"], "prio": 30, "chance": 0.7, "action": {"type": "meme", "name": "party"}},
     {"id": "brainrot", "patterns": ["brainrot", "skibidi", "\\bchaos\\b", "rizz"], "prio": 30, "chance": 0.6, "action": {"type": "meme", "name": "brainrot"}},
-    {"id": "scratch", "patterns": ["kratzbaum", "scratch"], "prio": 25, "chance": 0.6, "action": {"type": "emote", "frames": ["walk1", "walk2"], "fps": 8, "dur": 2.5, "bubble": "*kratz kratz*"}},
+    {"id": "scratch", "patterns": ["kratzbaum", "scratch"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "scratch"}},
+    {"id": "tv", "patterns": ["fernseh", "\\btv\\b", "netflix"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "tv"}},
+    {"id": "pillow", "patterns": ["kissen", "pillow"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "pillow"}},
+    {"id": "bed", "patterns": ["\\bbett\\b", "\\bbed\\b", "ab ins bett"], "prio": 32, "chance": 0.6, "action": {"type": "meme", "name": "bed"}},
+    {"id": "boxsit", "patterns": ["karton", "\\bbox\\b", "if i fits"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "boxsit"}},
+    {"id": "yarn", "patterns": ["wolle", "yarn"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "yarn"}},
+    {"id": "mouse", "patterns": ["\\bmaus\\b", "\\bmouse\\b", "🐭"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "mousechase"}},
+    {"id": "bone", "patterns": ["knochen", "\\bbone\\b", "🦴"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "bone"}},
+    {"id": "visitor", "patterns": ["besuch", "visitor", "\\bfreund\\b"], "prio": 25, "chance": 0.6, "action": {"type": "meme", "name": "visitor"}},
     {"id": "scared", "patterns": ["creeper", "\\bbuh\\b", "\\bboo\\b", "jumpscare"], "prio": 30, "chance": 0.6, "action": {"type": "meme", "name": "scare"}}
   ]
 }

@@ -477,6 +477,51 @@ MEMES = {
          'bubble': ('Tanz-Party!', 'Dance party!')},
     ],
     'brainrot': [{'t': 4.0, 'chaos': True, 'fx': 'glitch'}],
+    # ---- everyday life (also picked by the random life, see LIFE)
+    'scratch': [
+        {'t': 0.5, 'frames': ['surprised'], 'props': [('scratchpost', 13, None, 'drop', 'back')]},
+        {'t': 3.0, 'frames': ['stretch', 'jump'], 'fps': 5, 'bubble': ('*kratz kratz*', '*scratch scratch*'),
+         'props': [('scratchpost', 13, None, None, 'back')]},
+    ],
+    'pillow': [
+        {'t': 0.5, 'frames': ['happy'], 'props': [('pillow', 0, None, 'drop', 'back')]},
+        {'t': 6.0, 'frames': ['sleep'], 'lift': 3, 'fx': 'zz', 'props': [('pillow', 0, None, None, 'back')]},
+        {'t': 0.8, 'frames': ['stretch'], 'props': [('pillow', 0, None, None, 'back')]},
+    ],
+    'bed': [
+        {'t': 0.6, 'frames': ['happy'], 'props': [('bed', -4, None, 'drop', 'back')]},
+        {'t': 7.0, 'frames': ['sleep'], 'lift': 4, 'fx': 'zz',
+         'props': [('bed', -4, None, None, 'back'), ('bed_front', -4, None, None)]},
+        {'t': 0.8, 'frames': ['stretch'], 'props': [('bed', -4, None, None, 'back')]},
+    ],
+    'tv': [
+        {'t': 0.5, 'frames': ['surprised'], 'face': 1, 'props': [('tv0', 20, None, 'drop')]},
+        {'t': 6.0, 'frames': ['sit'], 'face': 1, 'bubble': ('*guckt Cartoons*', '*watching cartoons*'),
+         'props': [('tv', 20, None, 'flicker'), ('popcorn', 13, None, None)]},
+    ],
+    'boxsit': [
+        {'t': 0.5, 'frames': ['surprised'], 'props': [('box', -2, None, 'drop', 'back')]},
+        {'t': 5.0, 'frames': ['idle', 'blink'], 'fps': 0.7, 'lift': 3, 'bubble': ('Wenn ich passe, sitze ich.', 'If I fits, I sits.'),
+         'props': [('box', -2, None, None, 'back'), ('box_front', -2, None, None)]},
+        {'t': 0.4, 'frames': ['jump'], 'hop': True, 'props': [('box', -2, None, None, 'back')]},
+    ],
+    'yarn': [
+        {'t': 3.5, 'frames': ['walk1', 'jump', 'walk5', 'sit'], 'fps': 4, 'props': [('yarn', 13, None, 'bounce')]},
+    ],
+    'mousechase': [
+        {'t': 0.6, 'frames': ['surprised'], 'bubble': '!', 'props': [('mousetoy', 18, None, 'drop')]},
+        {'walk_off': 'run', 'props': [('mousetoy', 19, None, 'bounce')]},
+        {'t': 1.5, 'hidden': True},
+        {'home': True},
+    ],
+    'bone': [
+        {'t': 4.0, 'frames': ['sit', 'happy'], 'fps': 1.5, 'bubble': ('*knabber*', '*chomp*'),
+         'props': [('bone', 12, None, 'drop')]},
+    ],
+    'visitor': [
+        {'t': 4.5, 'frames': ['idle', 'happy'], 'fps': 1, 'fx': 'hearts', 'bubble': ('Besuch!', 'A visitor!'),
+         'props': [('%visitor', 18, None, 'arrive')]},
+    ],
     'scare': [
         {'t': 0.5, 'frames': ['stand'], 'props': [('ghost', -12, -1, 'rise', 'back')]},
         {'t': 0.7, 'frames': ['surprised'], 'hop': True, 'bubble': ('BUH!', 'BOO!'),
@@ -484,6 +529,16 @@ MEMES = {
         {'t': 1.5, 'frames': ['surprised', 'jump'], 'fps': 8, 'bubble': 'AAAH!'},
     ],
 }
+
+
+# random-life weights: (meme, weight, species allowed or None = all)
+LIFE = [
+    ('scratch', 0.35, ('cat',)), ('pillow', 0.3, None), ('bed', 0.2, None), ('tv', 0.2, None),
+    ('boxsit', 0.3, ('cat', 'fox', 'rabbit')), ('yarn', 0.3, ('cat',)), ('mousechase', 0.2, ('cat', 'fox', 'dog')),
+    ('bone', 0.35, ('dog',)), ('visitor', 0.08, None),
+    ('thisisfine', 0.03, None), ('sus', 0.08, None), ('party', 0.05, None), ('brainrot', 0.02, None),
+    ('cook', 0.04, None), ('cds', 0.03, None), ('scare', 0.03, None),
+]
 
 
 class Meme(Action):
@@ -496,6 +551,9 @@ class Meme(Action):
 
     def start(self, pet):
         self.home, self.vy, self.chaos_t = pet.x, 0.0, 0.0
+        others = [sp for sp in BREEDS if sp != pet.species]
+        sp = pet.rng.choice(others)
+        self.visitor = skin(sp, pet.rng.choice(list(BREEDS[sp])))  # another animal drops by
         self._enter(pet, 0)
 
     def _enter(self, pet, i):
@@ -515,9 +573,10 @@ class Meme(Action):
     def step(self, pet, dt):
         st, lt, s = self.steps[self.i], self.t - self.t0, pet.s
         if st.get('walk_off'):
+            style = 'run' if st['walk_off'] == 'run' else 'walk'
             pet.y = pet.floor
-            pet.x += pet.facing * GAITS['walk'][1] * 1.5 * s * dt
-            pet.frame = gait_frame('walk', lt * 1.5)
+            pet.x += pet.facing * GAITS[style][1] * (1 if style == 'run' else 1.5) * s * dt
+            pet.frame = gait_frame(style, lt * (1 if style == 'run' else 1.5))
             done = pet.x < -16 * s or pet.x > pet.W or lt > 15
         elif st.get('home'):
             self.vy += GRAVITY * s * dt
@@ -526,7 +585,10 @@ class Meme(Action):
             done = pet.y >= pet.floor
         else:
             pet.y = pet.floor - (math.sin(math.pi * min(1.0, lt / st['t'])) * 12 * s if st.get('hop') else 0)
+            pet.y -= st.get('lift', 0) * s
             done = lt >= st['t']
+        if st.get('face'):
+            pet.facing = st['face']
         if st.get('frames'):
             k = int(lt * st.get('fps', 4))
             pet.frame = st['frames'][k % len(st['frames'])]
@@ -548,7 +610,7 @@ class Meme(Action):
 
     def _fx(self, pet, fx, dt):
         s, r = pet.s, pet.rng
-        if not fx or r.random() > dt * 8:  # ~8 particles/s
+        if not fx or r.random() > dt * (0.8 if fx == 'zz' else 8):  # particles per second
             return
         if fx == 'stars':
             a = self.t * 6
@@ -560,6 +622,9 @@ class Meme(Action):
         elif fx == 'notes':
             pet.emit(kind='text', text=r.choice('♪♫'), x=pet.cx + r.uniform(-8, 8) * s, y=pet.y, vy=-14 * s,
                      ttl=1.5, size=5 * s, color=r.choice(CONFETTI), g=0)
+        elif fx == 'zz':
+            pet.emit(kind='text', text='z', x=pet.cx + pet.facing * 5 * s, y=pet.y + 6 * s, vx=4 * s * pet.facing,
+                     vy=-10 * s, ttl=2.0, size=4 * s, color='#ffffff', g=0)
         elif fx == 'hearts':
             pet.emit(kind='text', text='♥', x=pet.cx + pet.facing * 12 * s + r.uniform(-6, 6) * s, y=pet.y,
                      vy=-10 * s, ttl=1.4, size=4 * s, color='#ff4d6d', g=0)
@@ -586,13 +651,19 @@ class Meme(Action):
         s = pet.s
         if anim == 'flicker':
             name += str(int(lt * 8 + dx) % 2)
-        own = name.startswith('@')
-        if own:
+        own = name[0] in '@%'
+        if name.startswith('@'):
             name = pet.skin + name[1:]
+        elif name == '%visitor':
+            name = self.visitor + ('idle' if lt >= 1.5 else gait_frame('walk', lt))
         w, h = SIZES[name]
         x = pet.x + (dx if pet.facing > 0 else 16 - dx - w) * s
         y = pet.H - h * s if dy is None else pet.y + dy * s
-        if anim == 'drop':
+        if anim == 'arrive':  # walk in from beyond the far side
+            x += pet.facing * max(0.0, 1 - lt / 1.5) * pet.W * 0.3
+        elif anim == 'bounce':
+            y -= abs(math.sin(lt * 6)) * 6 * s
+        elif anim == 'drop':
             y -= max(0.0, 1 - lt / 0.4) * 50 * s
         elif anim == 'rise':
             y += max(0.0, 1 - lt / 0.5) * (h if dy is None else 8) * s
@@ -667,7 +738,7 @@ class Pet:
             (0.4 * L, lambda: Emote(('walk1', 'jump'), 3.0, 4, prop='ball', bounce=True, prio=U)),
             (0.3 * L, lambda: Emote(('sit', 'happy'), 3.5, 1.5, prop='coffee', prio=U)),
             (0.1 * L, lambda: Teleport(prio=U)),
-        ]
+        ] + [(w * L, lambda n=n: Meme(n, prio=U)) for n, w, only in LIFE if not only or self.species in only]
         pick = r.uniform(0, sum(w for w, _ in table))
         for w, make in table:
             pick -= w

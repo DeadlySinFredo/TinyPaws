@@ -14,6 +14,7 @@
 - Echter Gangzyklus mit Knie/Pfotenheben: Gehen (8 Frames), Galopp (6), Anschleichen (8, geduckt); Geschwindigkeit passend zur Schrittlänge (keine rutschenden Pfoten).
 - 6 Tierarten: Katze, Hund, Fuchs (buschiger Schwanz), Hase (Schlappohren nach hinten, Puschel), Drache (Hörner, Flügel schlagen beim Fliegen), Vogel (eigener Körper: hüpft, fliegt mit Flügelschlag, breitet bei GigaChad die Flügel aus). Vogel und Drache fliegen beim Rennen im Bogen durch die Luft.
 - 11 Memes über eine datengetriebene Meme-Engine (Zeitleiste aus Schritten): This is Fine (Flammen + Kaffee), Bonk (Spielzeughammer + Sterne), Let Him Cook (Kochmütze + Herd + Dampf), Dramatic Exit (Koffer, läuft weg, fällt zurück), Achievement (Pokal + Banner), RIP (Grabstein, „Nur Spaß!“), Sus, Cat Distribution System (zweites Tier aus dem Karton), Tanz-Party (Noten), Brainrot (Chaos), Schreckmoment (Geist). Alle per Testpanel und Chat auslösbar.
+- Eigenleben: Kratzbaum (nur Katze), Kissen-Nickerchen, Bett mit Decke, Fernsehen mit Popcorn, im Karton sitzen, Wollknäuel, Mausjagd, Knochen (nur Hund), Besuch von einem anderen Tier; das Tier macht das (und seltene Memes) zufällig von selbst, gewichtet nach Zufallsaktivität und passend zur Tierart. Auch per Chat/Testpanel.
 - Gegenstände im gleichen detaillierten Stil (48er-Raster, Schattierung): Lok mit Speichenrädern, Kuppelstange, Laterne; Waggons mit Namensschild; Kinosessel mit Knöpfen; Pizza, Kaffeetasse mit Herz und Dampf, Popcorn, Banane, Ball.
 - Flüssiger: Gehen 16, Galopp 12, Schleichen 16 Bilder pro Zyklus (~30 Bilder/s); nach dem Laufen bleibt das Tier seitlich stehen statt ruckartig nach vorne zu drehen.
 - Rassen: Katze Tuxedo/Rot getigert/Grau/Weiß/Schwarz/Creme, Hund Beagle/Golden Retriever/Husky/Corgi/Schwarzer Labrador/Weiß, Fuchs Rot/Polar/Silber/Wüste, Hase Wild/Weiß/Grau/Schwarz, Drache Grün/Rot/Lila/Gold, Vogel Wellensittich blau/grün, Kanarienvogel, Rotkehlchen.
@@ -34,4 +35,4 @@ Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes
 - Settings-Änderung startet den Prozess neu.
 
 ## Nächste Schritte
-1. Twitch EventSub (Hype Train/Follows). 2. Neue Gegenstände fürs Eigenleben (Kratzbaum, Kissen, Bett, Fernseher) und Memes ins Zufallsverhalten. 3. Mehr Memes.
+1. Twitch EventSub (Hype Train/Follows). 2. Fenster hochklettern und oben drauf schlafen (KDE via KWin-Skript). 3. Mehr Memes.

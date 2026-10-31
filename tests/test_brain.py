@@ -117,6 +117,8 @@ class Movement(unittest.TestCase):
         p = pet(7)
         for _ in range(20000):
             p.update(1 / 30)
+            if isinstance(p.action, brain.Meme):  # memes may leave the screen on purpose (exit, chase)
+                continue
             self.assertTrue(0 <= p.x <= p.maxx and p.y <= p.floor + 1e-6)
 
     def test_held_then_fall(self):

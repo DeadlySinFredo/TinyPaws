@@ -11,10 +11,11 @@ COLORS = {
     'q': '#f06a5e', 'u': '#6b9cf0', 'y': '#c9a227', 'n': '#4a4a58', 's': '#c4c4d0',
     't': '#1f8f86', 'j': '#e0a965', 'i': '#2b8f45', 'k': '#6fdc8a', 'z': '#ffe680',
     'o': '#ff9f1c', 'x': '#c8955a', 'X': '#9c6d3a', 'v': '#e8e8f0',
+    'm': '#9b7bd4', 'l': '#c2a8f0', 'e': '#6a4fa8',
 }
 SHADE = {'R': ('q', 'r'), 'B': ('u', 'b'), 'Y': ('z', 'y'), 'N': ('n', None), 'T': ('W', 't'),
          'W': (None, 'v'), 'G': ('k', 'i'), 'M': ('j', None), 'S': ('s', 'n'), 'C': ('W', 'j'),
-         'x': ('j', 'X')}
+         'x': ('j', 'X'), 'm': ('l', 'e')}
 
 
 def _box(g, x0, y0, x1, y1, c):
@@ -293,9 +294,94 @@ def ghost():
     return _finish(g, SHADE)
 
 
+def scratchpost():
+    g = _blank(24, 48)
+    _box(g, 0, 42, 24, 48, 'm')  # carpet base
+    _box(g, 8, 10, 16, 43, 'x')  # sisal post
+    for y in range(12, 42, 3):
+        _thin(g, (8, y), (15.5, y + 1), 'X')
+    _box(g, 2, 6, 22, 11, 'm')  # plush platform
+    _ell(g, 12, 6, 10, 2, 'm')
+    _line(g, [(20, 11), (20, 21)], 0.3, 'N')  # dangling toy
+    _ell(g, 20, 22.5, 1.8, 1.8, 'R')
+    return _finish(g, SHADE)
+
+
+def pillow():
+    g = _blank(32, 12)
+    _ell(g, 16, 7, 15, 4.6, 'm')
+    for x in (2, 30):
+        _ell(g, x, 4, 1.3, 1.3, 'Y')
+        _ell(g, x, 10, 1.3, 1.3, 'Y')
+    _thin(g, (6, 7), (26, 7), 'e')
+    return _finish(g, SHADE)
+
+
+def bed(front_only=False):
+    """Pet bed with blanket; front_only = frame + blanket drawn over the sleeper."""
+    g = _blank(48, 24)
+    if not front_only:
+        _box(g, 0, 0, 6, 24, 'M')  # headboard
+        _ell(g, 3, 1, 3, 2, 'M')
+        _box(g, 4, 10, 46, 16, 'W')  # mattress
+        _ell(g, 11, 9.5, 5, 2.6, 'W')  # pillow
+    _box(g, 18, 13, 46, 20, 'B')  # blanket
+    for x in (24, 32, 40):
+        _ell(g, x, 16.5, 1.3, 1.3, 'Y')
+    _box(g, 4, 19, 48, 24, 'M')  # frame
+    _box(g, 44, 12, 48, 24, 'M')
+    return _finish(g, SHADE)
+
+
+def tv(i):
+    g = _blank(32, 28)
+    _line(g, [(16, 5), (9, 0.5)], 0.4, 'S')  # antenna
+    _line(g, [(16, 5), (23, 0.5)], 0.4, 'S')
+    _box(g, 1, 4, 31, 25, 'M')
+    _box(g, 3.5, 6.5, 24, 22.5, 'N')
+    _box(g, 5, 8, 22.5, 21, ('B', 'G')[i])
+    _ell(g, 13.5 + (2, -2)[i], 15.5, 3, 3, 'Y')  # bouncing cartoon ball on screen
+    _thin(g, (5.5, 9 + i * 6), (22, 9 + i * 6), 'W')  # scanline
+    for y in (10, 15):
+        _ell(g, 27.5, y, 1.4, 1.4, 'S')
+    _box(g, 5, 25, 8, 28, 'N')
+    _box(g, 24, 25, 27, 28, 'N')
+    return _finish(g, SHADE)
+
+
+def yarn():
+    g = _blank(16, 16)
+    _ell(g, 8, 8, 6.5, 6.5, 'R')
+    for a, b in (((3, 6), (12, 3)), ((2.5, 9), (13, 6)), ((4, 12.5), (13.5, 9.5))):
+        _thin(g, a, b, 'q')
+    _line(g, [(13, 12), (15.5, 14.5)], 0.35, 'R')
+    return _finish(g, SHADE)
+
+
+def mousetoy():
+    g = _blank(16, 10)
+    _line(g, [(3, 7), (1, 5), (0.5, 2)], 0.35, 'P')
+    _ell(g, 8, 6.5, 5.5, 3.2, 'S')
+    _ell(g, 10.5, 3.5, 1.6, 1.6, 'P')
+    _ell(g, 12.6, 5.8, 0.6, 0.6, 'N')
+    _ell(g, 14, 7, 0.7, 0.6, 'P')
+    return _finish(g, SHADE)
+
+
+def bone():
+    g = _blank(20, 10)
+    _line(g, [(4.5, 5), (15.5, 5)], 1.7, 'W')
+    for x in (3.5, 16.5):
+        _ell(g, x, 3.4, 2.2, 2.2, 'W')
+        _ell(g, x, 6.6, 2.2, 2.2, 'W')
+    return _finish(g, SHADE)
+
+
 PROPS = {'chair': chair(), 'chair_front': chair_front(), 'loco': loco(), 'ball': ball(), 'pizza': pizza(),
          'coffee': coffee(), 'popcorn': popcorn(), 'banana': banana(),
          'flame0': flame(0), 'flame1': flame(1), 'hammer_up': hammer(False), 'hammer_down': hammer(True),
          'chefhat': chefhat(), 'stove': stove(), 'suitcase': suitcase(), 'trophy': trophy(),
          'tombstone': tombstone(), 'box': box(), 'box_front': box(True), 'ghost': ghost(),
+         'scratchpost': scratchpost(), 'pillow': pillow(), 'bed': bed(), 'bed_front': bed(True),
+         'tv0': tv(0), 'tv1': tv(1), 'yarn': yarn(), 'mousetoy': mousetoy(), 'bone': bone(),
          **{'wagon%d' % i: wagon(i) for i in range(4)}}
