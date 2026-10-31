@@ -642,6 +642,11 @@ MEMES = {
 }
 
 
+def visitor_skin(species):
+    """Visitors are always the base breed of their species (the OBS page ships exactly these frames)."""
+    return skin(species, next(iter(BREEDS[species])))
+
+
 # random-life weights: (meme, weight, species allowed or None = all)
 LIFE = [
     ('scratch', 0.35, ('cat',)), ('pillow', 0.3, None), ('bed', 0.2, None), ('tv', 0.2, None),
@@ -664,7 +669,7 @@ class Meme(Action):
         self.home, self.vy, self.chaos_t = pet.x, 0.0, 0.0
         others = [sp for sp in BREEDS if sp != pet.species]
         sp = pet.rng.choice(others)
-        self.visitor = skin(sp, pet.rng.choice(list(BREEDS[sp])))  # another animal drops by
+        self.visitor = visitor_skin(sp)  # another animal drops by
         self._enter(pet, 0)
 
     def _enter(self, pet, i):

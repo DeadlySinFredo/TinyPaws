@@ -1,47 +1,62 @@
-# Entwicklungsstand (2026-10-31, v0.3.0)
+# Entwicklungsstand (v0.3.0 + Arbeit an #3, Stand 2026-10-31)
 
-## Funktioniert (auf CachyOS / KDE Plasma / Wayland via XWayland live geprüft)
-- Katze erscheint unten auf dem gewählten Monitor über der Taskleiste, über normalen Fenstern, ohne Taskleisteneintrag.
-- Laufen, Rennen, Sitzen, Blinzeln, Schlafen mit „z"-Partikeln, Aufwachen/Strecken, Springen, Ball, Kaffee, Teleport-Glitch.
-- Ziehen mit der Maus + Herunterfallen; Klicks neben der Katze gehen durch.
-- Schaut zum Mauszeiger, wenn sie in der Nähe ist und idle ist.
-- Hype Train, GigaChad, Absolute Cinema über Testpanel, Tray und Chat-Simulation.
-- Einstellungen + Position werden gespeichert und beim Start wiederhergestellt; Autostart per XDG.
-- OBS lädt nur die Bilder des gewählten Tiers (~180 KB statt ~9 MB).
-- OBS-Browser-Quelle `http://127.0.0.1:8737/` (in Einstellungen aktivierbar), live im Browser geprüft: Katze erscheint transparent und synchron.
-- Twitch-Chat anonym: live mit 5 öffentlichen Kanälen verbunden, Chatnachrichten empfangen.
-- Tiere jetzt in 48×48 Pixeln (Dichte 3), Standardgröße 96 px (Skalierung 6 ≈ 3 Mauszeiger), runde Glanzaugen, Schnurrhaare.
-- Echter Gangzyklus mit Knie/Pfotenheben: Gehen (8 Frames), Galopp (6), Anschleichen (8, geduckt); Geschwindigkeit passend zur Schrittlänge (keine rutschenden Pfoten).
-- 6 Tierarten: Katze, Hund, Fuchs (buschiger Schwanz), Hase (Schlappohren nach hinten, Puschel), Drache (Hörner, Flügel schlagen beim Fliegen), Vogel (eigener Körper: hüpft, fliegt mit Flügelschlag, breitet bei GigaChad die Flügel aus). Vogel und Drache fliegen beim Rennen im Bogen durch die Luft.
-- 11 Memes über eine datengetriebene Meme-Engine (Zeitleiste aus Schritten): This is Fine (Flammen + Kaffee), Bonk (Spielzeughammer + Sterne), Let Him Cook (Kochmütze + Herd + Dampf), Dramatic Exit (Koffer, läuft weg, fällt zurück), Achievement (Pokal + Banner), RIP (Grabstein, „Nur Spaß!“), Sus, Cat Distribution System (zweites Tier aus dem Karton), Tanz-Party (Noten), Brainrot (Chaos), Schreckmoment (Geist). Alle per Testpanel und Chat auslösbar.
-- Startfenster mit großen Knöpfen (Twitch verbinden, In OBS einbinden), Einzelinstanz (erneuter Start öffnet das Startfenster), Autostart startet still im Tray. Eigenes App-Icon (Fenster, Taskleiste, Tray, Startmenü, .exe, .app).
-- Twitch-Login live bestätigt (Konto verbunden, EventSub-Abos ohne Fehler).
-- HD-Sprites (aus TinyPaws_Alle_34_Varianten_HD_und_Fluessig.zip): alle 28 Rassen als 120×120-Sheets (Dichte 6, doppelte Auflösung) mit doppelt so vielen Lauf-Bildern (Gehen 32, Galopp/Flug 24, Schleichen 32) in `assets/pets/`. Die 6 zusätzlichen Sheets der ZIP waren byte-identisch mit der jeweiligen Grundrasse. Geprüft: Paketregeln, kein Clipping, keine leeren Bilder, saubere Schleifenübergänge, Deckungsgleichheit mit den alten Sprites (≤ 0,17 Einheiten → Lokfenster/Sessel/Fensterkante passen), alle 28 live durchgeschaltet (Laden ~0,6 s je Tier). Gleiche Zykluszeit → nicht langsamer; beim Laufen 60 statt 30 Bilder/s, damit die Zwischenbilder sichtbar sind. Der prozedurale Generator bleibt als automatischer Ersatz, Backup-Tag `backup/pre-hd-sprites`.
-- Pakete: GitHub Actions baut Linux (76 MB), Windows (48 MB), macOS arm64 (34 MB) und führt die Tests auf allen drei Systemen aus (grün). Arch-PKGBUILD lokal gebaut (Tests im check()). Lokaler PyInstaller-Build gestartet: KWin-Skript + OBS laufen. **Nicht geprüft**: die Windows-/macOS-Pakete auf echter Hardware (Fenster-Overlay, Tray, Autostart).
-- Eigene Tiere: Vorlage exportieren → umzeichnen → importieren; geprüft per Round-Trip-Test (pixelgenau), Szenen-Test mit Paket-Tier und Abwehr bösartiger ZIPs (Pfad-Tricks, falsche Felder, fehlende Dateien).
-- Twitch EventSub: Hype Train (Start → Zug-Szene mit echten Top-Unterstützern, Level-Up → Jubel, Ende → große Feier), Follows, Abos, Geschenk-Abos, Bits, Raids. Login per Device-Code. Geprüft: Mapping per Tests, Fehlerpfad gegen echte Twitch-API (ungültige Client-ID wird sauber gemeldet). **Nicht geprüft**: echter Login + echte Events (braucht deine Client-ID).
-- Fenster klettern (KDE): Tier läuft zur Fensterkante, klettert die Seite hoch (Laufzyklus um 90° gedreht), springt oben drauf, schläft mit herabhängenden Vorderpfoten und Schwanz, fährt mit, wenn das Fenster verschoben wird, fällt herunter, wenn es geschlossen/minimiert wird, und springt danach wieder runter. Nur Fenster, die kleiner als der Bildschirm und nicht verdeckt sind. Testpanel: „Fenster klettern“.
-- Eigenleben: Kratzbaum (nur Katze), Kissen-Nickerchen, Bett mit Decke, Fernsehen mit Popcorn, im Karton sitzen, Wollknäuel, Mausjagd, Knochen (nur Hund), Besuch von einem anderen Tier; das Tier macht das (und seltene Memes) zufällig von selbst, gewichtet nach Zufallsaktivität und passend zur Tierart. Auch per Chat/Testpanel.
-- Gegenstände im gleichen detaillierten Stil (48er-Raster, Schattierung): Lok mit Speichenrädern, Kuppelstange, Laterne; Waggons mit Namensschild; Kinosessel mit Knöpfen; Pizza, Kaffeetasse mit Herz und Dampf, Popcorn, Banane, Ball.
-- Flüssiger: Gehen 16, Galopp 12, Schleichen 16 Bilder pro Zyklus (~30 Bilder/s); nach dem Laufen bleibt das Tier seitlich stehen statt ruckartig nach vorne zu drehen.
-- Rassen: Katze Tuxedo/Rot getigert/Grau/Weiß/Schwarz/Creme, Hund Beagle/Golden Retriever/Husky/Corgi/Schwarzer Labrador/Weiß, Fuchs Rot/Polar/Silber/Wüste, Hase Wild/Weiß/Grau/Schwarz, Drache Grün/Rot/Lila/Gold, Vogel Wellensittich blau/grün, Kanarienvogel, Rotkehlchen.
-- Katze ursprünglich: Chibi-Stil schwarz-weiß (Tuxedo), große Glanzaugen, Schattierung; Idle/Überrascht/Cinema frontal sitzend, Laufen/Springen/Schlafen seitlich.
-- Gemessen: ~2 % CPU (30 FPS, 1 Kern), ~120 MB RSS; im Schlaf 8 FPS.
+Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am echten Desktop geprüft ·
+**Test** = nur automatisiert/offscreen geprüft · **offen** = nicht abgenommen.
 
-## Getestet
-- `python3 -m unittest discover -s tests -t .` – 46 Tests (inkl. HD-Sprites, Tierpakete, EventSub-Mapping, Klettern: Fensterfilter, kompletter Ablauf, Mitfahren, Herunterfallen, jedes Meme mit jeder Tierart, alle Tierarten/Rassen in allen Szenen, Fliegen, Gangarten, Hund in allen Szenen, OBS-Server und Twitch-Parser/Validierung): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
-- `scripts/render_preview.py` rendert Szenen offscreen als PNG (visuell geprüft).
-- Live-Start + Screenshot auf dem Desktop.
+## Desktop-Haustier
+| Funktion | Stand |
+|---|---|
+| Tier über allen Fenstern, Klicks gehen durch, Ziehen/Fallenlassen, kein Taskleisteneintrag | live |
+| 6 Tierarten, 28 Rassen; HD-Sheets 120×120 (Dichte 6) mit 32/24/32 Lauf-/Galopp-/Schleich-Bildern, Generator als Ersatz | live (alle 28 durchgeschaltet) |
+| Gangarten Gehen/Galopp/Schleichen, Vogel/Drache fliegen; 60 Bilder/s nur in Bewegung | live |
+| Eigenleben (Kratzbaum, Kissen, Bett, TV, Karton, Wolle, Mausjagd, Knochen, Besuch) + seltene Memes zufällig | live (Stichproben), Test (jede Szene × jede Tierart) |
+| 11 Memes + Hype Train, GigaChad, Absolute Cinema | Test (alle × alle Tierarten), live Stichproben |
+| Fenster klettern + oben schlafen (KDE, Laufzeit-KWin-Skript) | live bestätigt |
+| Startfenster (Twitch/OBS-Knöpfe, Tierwahl, Status), Einzelinstanz, Tray, App-Icon | live |
+| Einstellungen wirken sofort, ohne Neustart | Test (6 Fälle), Startfenster-Status live |
+| Tierpakete (Vorlage exportieren, importieren, auswählen) | Test (pixelgenauer Round-Trip, bösartige ZIPs) |
 
-## Fehlt noch
-Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes/Gegenstände, Editor, KI, Windows/macOS-Pakete, Wandern zwischen Monitoren, Sound.
+## Streaming
+| Funktion | Stand |
+|---|---|
+| OBS-Browserquelle (127.0.0.1, transparent) | live im Browser; **offen:** echte OBS-App |
+| OBS bei Tierwechsel/App-Neustart ohne Reload (#3 P0, PR #4) | live im Browser (225 Messpunkte, 0 fehlende Bilder) |
+| Twitch-Chat (anonym, IRC) | live (öffentliche Kanäle) |
+| Twitch-Login (Device-Code) + EventSub-Abos | live (Konto verbunden, Abos ohne Fehler) |
+| Reaktion auf echte Follow/Abo/Bits/Raid/Hype-Train-Events | Test (Mapping); **offen:** echte Events |
+| Chat-Regeln: 45 Regex-Regeln in `reactions.json`, Cooldowns, Spam-Schutz | Test |
+
+## Builds
+| Plattform | Stand |
+|---|---|
+| Linux/Windows/macOS-Pakete per GitHub Actions, Tests laufen auf allen drei | CI grün |
+| Release v0.3.0 mit allen drei Paketen | veröffentlicht (Repo privat) |
+| Arch/CachyOS-PKGBUILD | lokal gebaut |
+| Windows-/macOS-Pakete auf echter Hardware | **offen** (Overlay, Klickdurchlass, Tray, Autostart, DPI) |
+
+## Messwerte (KDE, 3440×1440, Skalierung 6, `scripts/measure_perf.py`)
+Nur geänderte Bildbereiche werden neu gezeichnet (vorher jedes Mal das ganze bildschirmgroße Overlay):
+
+| Zustand | CPU (1 Kern) vorher → nachher | neu gezeichnete Fläche je Bild | Bilder/s |
+|---|---|---|---|
+| Leerlauf | 0,1 % → 0,1 % | 4,8 Mio. → ~16 000 px | ~1 |
+| Schlaf | 0,8 % → 0,3 % | 4,8 Mio. → ~16 000 px | 8 |
+| Laufen | 4,7 % → 1,6 % | 4,8 Mio. → ~16 000 px | 60 |
+
+RAM ~144 MB (RSS, HD-Tier geladen). Last des Compositors sinkt zusätzlich (nicht separat gemessen).
+
+## Tests
+`python3 -m unittest discover -s tests -t .` – 61 Tests (inkl. pixelgenauer Vergleich Teil- vs. Voll-Neuzeichnen über alle Szenen): Bewegung, Prioritäten, alle Szenen/Memes × alle
+Tierarten, Klettern, HD-Sprites (Bildzahl, Zyklusdauer, Szenen), Tierpakete, Chat, Twitch-Parser,
+EventSub-Mapping, OBS (inkl. Tierwechsel/Reconnect), Live-Einstellungen, Settings-Validierung.
 
 ## Technische Einschränkungen
-- Windows/macOS-Pakete sind unsigniert (Warnung beim ersten Start). Twitch-Token ohne `secret-tool` (Windows/macOS) nur im Speicher → nach Neustart neu verbinden. Fensterklettern nur KDE.
-- Fensterklettern nur unter KDE Plasma: ein KWin-Skript wird zur Laufzeit geladen (keine dauerhafte KWin-Änderung) und meldet Fenstergeometrien per D-Bus; beim Beenden (auch SIGTERM) wird es entladen. Bei Bildschirmskalierung ≠ 100 % können XWayland- und KWin-Koordinaten abweichen (ungetestet).
-- Native Wayland: KWin verbietet Positionierung/„immer oben" → XWayland. Vollbild-Spiele können die Katze überdecken.
-- Fenster-Raise alle 2 s: ganz kurz kann ein neu geöffnetes Fenster über der Katze liegen.
-- Settings-Änderung startet den Prozess neu.
+- Native Wayland: KWin verbietet Positionierung/„immer oben“ für Clients → TinyPaws läuft über XWayland
+  (`X11BypassWindowManagerHint`, Anheben alle 2 s; ein neues Fenster kann kurz darüber liegen).
+  Vollbild-Spiele können das Tier überdecken. Layer-Shell-Alternative wird in #3 geprüft.
+- Fensterklettern nur KDE; bei Bildschirmskalierung ≠ 100 % ungetestet.
+- Windows/macOS: unsigniert; Twitch-Token dort ohne `secret-tool` nur im Speicher.
+- Besuchertiere sind immer die Grundrasse ihrer Art.
 
 ## Nächste Schritte
-1. Twitch EventSub (Hype Train/Follows). 2. Twitch-Login mit echter Client-ID live testen; Fenster klettern für GNOME/Windows/macOS. 3. Mehr Memes.
+Siehe Issue #3: Performance-Messung, Multi-Monitor, Multi-Pet, Wayland-Layer-Shell, Sound, Streaming-Härtung.
