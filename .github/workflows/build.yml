@@ -43,7 +43,7 @@ jobs:
           python-version: '3.12'
       - name: Python 3.12 venv (self-hosted Windows, no admin rights needed)
         if: runner.os == 'Windows' && runner.environment != 'github-hosted'
-        shell: pwsh
+        shell: powershell
         run: |
           if (Get-Command py -ErrorAction SilentlyContinue) { py -3.12 -m venv .venv } else { python -m venv .venv }
           if ($LASTEXITCODE -ne 0 -or -not (Test-Path .venv\Scripts\python.exe)) {
@@ -63,7 +63,7 @@ jobs:
         run: tar -C dist -czf TinyPaws-${{ matrix.name }}.tar.gz TinyPaws
       - name: Archive (Windows)
         if: runner.os == 'Windows'
-        shell: pwsh
+        shell: powershell
         run: Compress-Archive -Force -Path dist/TinyPaws -DestinationPath TinyPaws-${{ matrix.name }}.zip
       - uses: actions/upload-artifact@v4
         with:
