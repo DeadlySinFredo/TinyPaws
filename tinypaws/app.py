@@ -15,6 +15,7 @@ from pathlib import Path
 from . import brain, settings
 from .obs import ObsServer
 from . import packs
+from .screens import exits as screen_exits, neighbour as screen_neighbour
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
 from .eventsub import TwitchEventSub, valid_client_id
@@ -31,12 +32,13 @@ TR = {
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
-               climbnow='Fenster klettern', clientid='Twitch Client-ID (Hype Train, Follows)',
+               climbnow='Fenster klettern', roam='Zwischen Monitoren wandern', clientid='Twitch Client-ID (Hype Train, Follows)',
                tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren', obs_btn='In OBS einbinden',
                obs_port_busy='OBS-Quelle aus: Port {0} ist belegt ({1}). Anderen Port in den Einstellungen wählen.',
                st_pet='Tier: {0}', st_obs_on='OBS: aktiv – {0} ({1} Quelle(n) verbunden)', st_obs_off='OBS: aus',
                st_tw_off='nicht verbunden',
-               home_sub='Dein Pixel-Haustier', tw_hint='Follows, Abos, Raids & Hype Train auf deinem Kanal.',
+               home_sub='Dein Pixel-Haustier', companions='Begleiter (bis zu 3 weitere Tiere)', comp_add='Hinzufügen',
+               comp_remove='Entfernen', tw_hint='Follows, Abos, Raids & Hype Train auf deinem Kanal.',
                show_home='TinyPaws öffnen',
                obs_copied='OBS-Link kopiert: {url}\nIn OBS: Quelle „Browser“ → URL einfügen, Breite {w}, Höhe {h}.',
                tw_setup='Twitch einrichten (einmalig)',
@@ -55,12 +57,13 @@ TR = {
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
-               climbnow='Climb window', clientid='Twitch Client ID (Hype Train, follows)',
+               climbnow='Climb window', roam='Wander between monitors', clientid='Twitch Client ID (Hype Train, follows)',
                tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link', obs_btn='Add to OBS',
                obs_port_busy='OBS source off: port {0} is busy ({1}). Pick another port in settings.',
                st_pet='Pet: {0}', st_obs_on='OBS: on – {0} ({1} source(s) connected)', st_obs_off='OBS: off',
                st_tw_off='not connected',
-               home_sub='Your pixel pet', tw_hint='Follows, subs, raids & hype train on your channel.',
+               home_sub='Your pixel pet', companions='Companions (up to 3 more pets)', comp_add='Add',
+               comp_remove='Remove', tw_hint='Follows, subs, raids & hype train on your channel.',
                show_home='Open TinyPaws',
                obs_copied='OBS link copied: {url}\nIn OBS: add a “Browser” source, paste the URL, width {w}, height {h}.',
                tw_setup='Set up Twitch (once)',
@@ -264,9 +267,9 @@ class Overlay(QWidget):
 class Handle(QWidget):
     """Invisible window over the pet: drag, double-click, context menu."""
 
-    def __init__(self, ctl):
+    def __init__(self, ctl, slot=0):
         super().__init__(None, _TOP)
-        self.ctl = ctl
+        self.ctl, self.slot = ctl, slot  # slot 0 = main pet, 1.. = companions
         self.setAttribute(Qt.WA_MacAlwaysShowToolWindow)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
@@ -278,7 +281,7 @@ class Handle(QWidget):
 
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
-            self.ctl.grab(e.globalPosition())
+            self.ctl.grab(e.globalPosition(), self.slot)
         elif e.button() == Qt.RightButton:
             self.ctl.menu.exec(e.globalPosition().toPoint())
 
@@ -290,7 +293,7 @@ class Handle(QWidget):
             self.ctl.release()
 
     def mouseDoubleClickEvent(self, _):
-        self.ctl.do('poke')
+        self.ctl.poke(self.slot)
 
 
 class SettingsDialog(QDialog):
@@ -323,6 +326,7 @@ class SettingsDialog(QDialog):
         self.autostart = QCheckBox(checked=cfg['autostart'])
         self.poems = QCheckBox(checked=cfg['poems'])
         self.climb = QCheckBox(checked=cfg['climb'])
+        self.roam = QCheckBox(checked=cfg['roam'])
         self.clientid = secret_edit(cfg['twitch_client_id'])
         self.clientid.setPlaceholderText('dev.twitch.tv → Anwendung (öffentlich)')
         self.twitch = QLineEdit(cfg['twitch_channel'])
@@ -330,7 +334,7 @@ class SettingsDialog(QDialog):
         self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
         for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb), ('roam', self.roam)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -345,7 +349,7 @@ class SettingsDialog(QDialog):
         return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed, pack=pack,
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
-                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(),
+                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(), roam=self.roam.isChecked(),
                     twitch_channel=self.twitch.text().strip().lstrip('#').lower(),
                     twitch_client_id=self.clientid.text().strip().lower(),
                     first_run_done=True)
@@ -434,6 +438,18 @@ class Home(QWidget):
             lambda i: self.animal.signalsBlocked() or ctl.set_animal(self.animal.itemData(i)))
         row.addWidget(self.animal, 1)
         v.addLayout(row)
+        box = QGroupBox(t('companions'))
+        self.comp_layout = QVBoxLayout(box)
+        self.comp_rows = QVBoxLayout()
+        self.comp_layout.addLayout(self.comp_rows)
+        add = QHBoxLayout()
+        self.comp_choice = QComboBox()
+        self.comp_add = QPushButton(t('comp_add'))
+        self.comp_add.clicked.connect(self._add_companion)
+        add.addWidget(self.comp_choice, 1)
+        add.addWidget(self.comp_add)
+        self.comp_layout.addLayout(add)
+        v.addWidget(box)
         row = QHBoxLayout()
         for k, fn in (('panel', ctl.show_panel), ('settings', ctl.open_settings), ('quit', ctl.quit)):
             b = QPushButton(t(k))
@@ -454,7 +470,38 @@ class Home(QWidget):
         self.animal.setCurrentIndex(max(0, self.animal.findData(c.current_animal())))
         self.animal.blockSignals(False)
         self.tw_info.setText(c.es_state or c.t('tw_hint'))
+        self._fill_companions()
         self.update_status()
+
+    def _fill_companions(self):
+        c, t = self.ctl, self.ctl.t
+        while self.comp_rows.count():
+            item = self.comp_rows.takeAt(0)
+            lay = item.layout()
+            while lay and lay.count():
+                w = lay.takeAt(0).widget()
+                if w:
+                    w.deleteLater()
+        names = dict((k, l) for l, k in animal_choices(c.cfg['lang']))
+        for i, comp in enumerate(c.companions):
+            row = QHBoxLayout()
+            on = QCheckBox(names.get(comp['key'], comp['key']), checked=comp['enabled'])
+            on.toggled.connect(lambda v, i=i: c.toggle_companion(i, v))
+            rm = QPushButton(t('comp_remove'))
+            rm.clicked.connect(lambda *_, i=i: (c.remove_companion(i), self.refresh()))
+            row.addWidget(on, 1)
+            row.addWidget(rm)
+            self.comp_rows.addLayout(row)
+        self.comp_choice.clear()
+        for label, key in animal_choices(c.cfg['lang']):
+            self.comp_choice.addItem(label, key)
+        full = len(c.companions) >= settings.MAX_COMPANIONS
+        self.comp_add.setEnabled(not full)
+        self.comp_choice.setEnabled(not full)
+
+    def _add_companion(self):
+        self.ctl.add_companion(self.comp_choice.currentData())
+        self.refresh()
 
     def update_status(self):
         self.status.setText('<br>'.join(self.ctl.status_lines()))
@@ -567,8 +614,14 @@ class TinyPaws:
         self.handle.resize(16 * s, 16 * s)
         if cfg['interact']:
             self.handle.show()
-        self.drag_off, self.items, self.hpos, self.cursor_t, self.raise_t = None, None, None, 0.0, 0.0
+        self.drag_off, self.drag_slot, self.items, self.hpos, self.cursor_t, self.raise_t = None, 0, None, None, 0.0, 0.0
+        self.companions = []
         self.full_repaint = True
+        self._update_exits()
+        app.screenAdded.connect(self._screens_changed)
+        app.screenRemoved.connect(self._screens_changed)
+        for sc in QGuiApplication.screens():
+            sc.availableGeometryChanged.connect(self._screens_changed)
         self.panel, self.obs, self.home, self.obs_error = None, None, None, ''
         if cfg['obs']:
             self._start_obs()
@@ -583,6 +636,7 @@ class TinyPaws:
         if valid_channel(cfg['twitch_channel']):
             self.twitch = TwitchChat(cfg['twitch_channel'])
         self._build_menu()
+        self.set_companions(cfg['companions'])
         self.last = time.monotonic()
         self.timer = QTimer()
         self.timer.timeout.connect(self.tick)
@@ -655,11 +709,20 @@ class TinyPaws:
                 ev = self.twitch.events.get_nowait()
                 if es_on and ev['type'] != 'chat':
                     continue  # EventSub already delivers subs/bits/raids; avoid double reactions
-                brain.handle_event(pet, self.engine, ev)
+                brain.handle_event(self._event_target(ev), self.engine, ev)
         while self.es and self.es.events:
             brain.handle_event(pet, self.engine, self.es.events.pop(0))
         pet.update(dt)
+        if pet.left_by:
+            self._roam_over(pet.left_by)
         items = pet.render()
+        active = [c for c in self.companions if c['enabled']]
+        for c in active:
+            cp = c['pet']
+            if self.win_seen is not None and cp.ledges is not pet.ledges:
+                cp.ledges = pet.ledges
+            cp.update(dt)
+            items = items + cp.render()
         if items != self.items:
             # repaint only where something was or is now drawn (full overlay = whole screen)
             dirty = QRegion()
@@ -674,36 +737,59 @@ class TinyPaws:
             if self.obs:
                 self.obs.publish(self.geo.width(), self.geo.height(), self.cfg['scale'], items)
         hp = (self.geo.x() + int(pet.x), self.geo.y() + int(pet.y))
-        if hp != self.hpos and self.drag_off is None:
+        if hp != self.hpos and not (self.drag_off is not None and self.drag_slot == 0):
             self.hpos = hp
             self.handle.move(*hp)
-        moving = pet.frame.startswith(('walk', 'run', 'sneak'))  # show every in-between frame while moving
-        want = 125 if pet.sleeping else 1000 // (max(60, self.cfg['fps']) if moving else self.cfg['fps'])
+        for i, c in enumerate(active):
+            hp = (self.geo.x() + int(c['pet'].x), self.geo.y() + int(c['pet'].y))
+            if hp != c['hpos'] and not (self.drag_off is not None and self.drag_slot == self.companions.index(c) + 1):
+                c['hpos'] = hp
+                c['handle'].move(*hp)
+        pets = [pet] + [c['pet'] for c in active]
+        moving = any(p.frame.startswith(('walk', 'run', 'sneak')) for p in pets)  # show every in-between frame
+        want = 125 if all(p.sleeping for p in pets) else 1000 // (max(60, self.cfg['fps']) if moving else self.cfg['fps'])
         if self.timer.interval() != want:
             self.timer.setInterval(want)
 
     # ---------------------------------------------------------------- input
-    def grab(self, gp):
-        if self.pet.play(brain.Held(), queue=False):
-            self.pet.held = True
-            self.drag_off = (gp.x() - self.handle.x(), gp.y() - self.handle.y())
+    def _slot(self, slot):
+        """(pet, handle) for slot 0 = main pet, 1.. = companions."""
+        if slot == 0:
+            return self.pet, self.handle
+        c = self.companions[slot - 1]
+        return c['pet'], c['handle']
+
+    def grab(self, gp, slot=0):
+        pet, handle = self._slot(slot)
+        if pet.play(brain.Held(), queue=False):
+            pet.held = True
+            self.drag_slot = slot
+            self.drag_off = (gp.x() - handle.x(), gp.y() - handle.y())
 
     def drag(self, gp):
         if self.drag_off is None:
             return
-        pet = self.pet
+        pet, handle = self._slot(self.drag_slot)
         pet.x = pet.clampx(gp.x() - self.drag_off[0] - self.geo.x())
         pet.y = max(0.0, min(pet.floor, gp.y() - self.drag_off[1] - self.geo.y()))
-        self.handle.move(self.geo.x() + int(pet.x), self.geo.y() + int(pet.y))
+        handle.move(self.geo.x() + int(pet.x), self.geo.y() + int(pet.y))
 
     def release(self):
-        self.pet.held, self.drag_off = False, None
-        self.cfg['x'] = self.pet.x
-        settings.save(self.cfg)
+        pet, _ = self._slot(self.drag_slot)
+        pet.held, self.drag_off = False, None
+        if self.drag_slot == 0:
+            self.cfg['x'] = self.pet.x
+            settings.save(self.cfg)
+
+    def poke(self, slot=0):
+        pet, _ = self._slot(slot)
+        pet.play(brain.Emote(('happy', 'jump'), 1.5, 4, bubble=brain.SPECIES[pet.species], prio=brain.P_USER))
 
     def set_interact(self, on):
         self.cfg['interact'] = on
         self.handle.setVisible(on)
+        for c in self.companions:
+            c['handle'].setVisible(on and c['enabled'])
         settings.save(self.cfg)
 
     def do(self, k, level=3):
@@ -778,7 +864,86 @@ class TinyPaws:
         if self.home:
             self.home.refresh()
         if self.obs:  # connected OBS pages pick up the new sprite set by themselves
-            self.obs.set_skin(new_skin)
+            self.obs.set_skin(self._skins())
+
+    # ---------------------------------------------------------------- companions
+    def _new_pet(self, key):
+        """Build a pet for 'species/breed' or 'pack/<id>'; returns (pet, skin) or None."""
+        kind, _, rest = key.partition('/')
+        if kind == 'pack':
+            if rest not in INSTALLED:
+                return None
+            species, breed, prefix = INSTALLED[rest][1], '', 'pack/%s:' % rest
+        elif kind in BREEDS and rest in BREEDS[kind]:
+            packs.load_builtin_hd(kind, rest)
+            species, breed, prefix = kind, rest, skin(kind, rest)
+        else:
+            return None
+        p = brain.Pet(self.geo.width(), self.geo.height(), scale=self.cfg['scale'],
+                      random_level=self.cfg['random_level'], lang=self.cfg['lang'], name=self.cfg['name'],
+                      poems=self.cfg['poems'], species=species, breed=breed)
+        p.skin = prefix
+        p.x = p.rng.uniform(0, p.maxx)
+        return p
+
+    def set_companions(self, entries):
+        """(Re)create companion pets from [{'key':..., 'enabled':...}] (max settings.MAX_COMPANIONS)."""
+        for c in self.companions:
+            c['handle'].close()
+            c['handle'].deleteLater()
+        self.companions = []
+        for i, e in enumerate(list(entries)[:settings.MAX_COMPANIONS]):
+            p = self._new_pet(e['key'])
+            if p is None:
+                continue
+            h = Handle(self, len(self.companions) + 1)
+            h.resize(16 * self.cfg['scale'], 16 * self.cfg['scale'])
+            self.companions.append(dict(key=e['key'], enabled=bool(e.get('enabled', True)), pet=p, handle=h, hpos=None))
+            h.setVisible(self.cfg['interact'] and self.companions[-1]['enabled'])
+        self.cfg['companions'] = [dict(key=c['key'], enabled=c['enabled']) for c in self.companions]
+        self._link_friends()
+        if self.obs:
+            self.obs.set_skin(self._skins())
+        self.full_repaint = True
+
+    def _link_friends(self):
+        active = [self.pet] + [c['pet'] for c in self.companions if c['enabled']]
+        for p in active:
+            p.friends = [o for o in active if o is not p]
+
+    def _skins(self):
+        return [self.skin] + [c['pet'].skin for c in self.companions]
+
+    def _event_target(self, ev):
+        """Chat reactions may go to any visible pet; everything else stays with the main pet."""
+        active = [c['pet'] for c in self.companions if c['enabled']]
+        if ev.get('type') == 'chat' and active:
+            return self.pet.rng.choice([self.pet] + active)
+        return self.pet
+
+    def add_companion(self, key):
+        if len(self.companions) >= settings.MAX_COMPANIONS:
+            return False
+        self.set_companions(self.cfg['companions'] + [dict(key=key, enabled=True)])
+        settings.save(self.cfg)
+        return True
+
+    def remove_companion(self, i):
+        entries = list(self.cfg['companions'])
+        del entries[i]
+        self.set_companions(entries)
+        settings.save(self.cfg)
+
+    def toggle_companion(self, i, on):
+        c = self.companions[i]
+        c['enabled'] = on
+        c['handle'].setVisible(on and self.cfg['interact'])
+        if not on:
+            c['pet'].action = None
+        self.cfg['companions'][i]['enabled'] = on
+        self._link_friends()
+        self.full_repaint = True
+        settings.save(self.cfg)
 
     # ---------------------------------------------------------------- pet packs
     def import_pack(self):
@@ -876,7 +1041,7 @@ class TinyPaws:
     def _start_obs(self):
         """Start the OBS server; a taken port must not break the desktop pet. Returns True on success."""
         try:
-            self.obs, self.obs_error = ObsServer(self.cfg['obs_port'], self.cfg['fps'], self.skin), ''
+            self.obs, self.obs_error = ObsServer(self.cfg['obs_port'], self.cfg['fps'], self._skins()), ''
             return True
         except OSError as e:
             self.obs, self.obs_error = None, self.t('obs_port_busy').format(self.cfg['obs_port'], e.strerror or e)
@@ -926,11 +1091,15 @@ class TinyPaws:
         """Apply changed settings live (no process restart)."""
         old, self.cfg = self.cfg, dict(new, x=self.pet.x)
         p, cfg = self.pet, self.cfg
-        p.name, p.random_level, p.poems, p.lang = cfg['name'], cfg['random_level'], cfg['poems'], cfg['lang']
+        for q in [p] + [c['pet'] for c in self.companions]:
+            q.name, q.random_level, q.poems, q.lang = cfg['name'], cfg['random_level'], cfg['poems'], cfg['lang']
+        if cfg['companions'] != old['companions']:
+            self.set_companions(cfg['companions'])
         if (cfg['animal'], cfg['breed'], cfg['pack']) != (old['animal'], old['breed'], old['pack']):
             self.set_animal('pack/%s' % cfg['pack'] if cfg['pack'] in INSTALLED else '%s/%s' % (cfg['animal'], cfg['breed']))
         if (cfg['scale'], cfg['screen']) != (old['scale'], old['screen']):
             self._apply_geometry()
+            self._update_exits()
         if cfg['interact'] != old['interact']:
             self.interact_act.setChecked(cfg['interact'])
         if (cfg['obs'], cfg['obs_port']) != (old['obs'], old['obs_port']) or not cfg['obs']:
@@ -948,6 +1117,8 @@ class TinyPaws:
             if self.twitch:
                 self.twitch.close()
             self.twitch = TwitchChat(cfg['twitch_channel']) if valid_channel(cfg['twitch_channel']) else None
+        if cfg['roam'] != old['roam']:
+            self._update_exits()
         if cfg['climb'] != old['climb']:
             if self.kwin:
                 self.kwin.close()
@@ -982,10 +1153,58 @@ class TinyPaws:
         p.W, p.H, p.s = self.geo.width(), self.geo.height(), s
         p.action, p.queue, p.particles = None, [], []
         p.x, p.y = p.clampx(p.x), p.floor
+        for c in self.companions:
+            cp = c['pet']
+            cp.W, cp.H, cp.s = p.W, p.H, s
+            cp.action, cp.queue, cp.particles = None, [], []
+            cp.x, cp.y = cp.clampx(cp.x), cp.floor
+            c['handle'].resize(16 * s, 16 * s)
+            c['hpos'] = None
         self.renderer = Renderer(s)
         self.handle.resize(16 * s, 16 * s)
         self.items = self.hpos = None
         self.full_repaint = True
+
+    @staticmethod
+    def _screen_rects():
+        return [(g.x(), g.y(), g.width(), g.height()) for g in (sc.availableGeometry() for sc in QGuiApplication.screens())]
+
+    def _screen_index(self):
+        n = len(QGuiApplication.screens())
+        return self.cfg['screen'] if self.cfg['screen'] < n else QGuiApplication.screens().index(QGuiApplication.primaryScreen())
+
+    def _update_exits(self):
+        self.pet.exits = screen_exits(self._screen_rects(), self._screen_index()) if self.cfg['roam'] else ()
+
+    def _screens_changed(self, *_):
+        """Monitor plugged/unplugged or resized (dock, resolution, scaling): re-fit the pet."""
+        for sc in QGuiApplication.screens():
+            try:
+                sc.availableGeometryChanged.disconnect(self._screens_changed)
+            except (RuntimeError, TypeError):
+                pass
+            sc.availableGeometryChanged.connect(self._screens_changed)
+        if self.cfg['screen'] >= len(QGuiApplication.screens()):
+            self.cfg['screen'] = self._screen_index()  # its monitor is gone: fall back to the primary one
+        self._apply_geometry()
+        self._update_exits()
+
+    def _roam_over(self, direction):
+        """Pet walked off an edge: continue on the neighbouring monitor, or turn back if there is none."""
+        p = self.pet
+        p.left_by = 0
+        nxt = screen_neighbour(self._screen_rects(), self._screen_index(), direction) if self.cfg['roam'] else None
+        if nxt is None:
+            p.x = p.clampx(p.x)
+            return
+        self.cfg['screen'] = nxt
+        settings.save(self.cfg)
+        self._apply_geometry()
+        self._update_exits()
+        p.facing = direction
+        p.x = -16 * p.s if direction > 0 else p.W
+        target = p.rng.uniform(0.05, 0.35) * p.maxx
+        p.play(brain.Walk(target if direction > 0 else p.maxx - target))
 
     def status_lines(self):
         """Human-readable state for the start window."""

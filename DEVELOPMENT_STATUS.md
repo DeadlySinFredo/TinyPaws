@@ -13,6 +13,8 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 | 11 Memes + Hype Train, GigaChad, Absolute Cinema | Test (alle × alle Tierarten), live Stichproben |
 | Fenster klettern + oben schlafen (KDE, Laufzeit-KWin-Skript) | live bestätigt |
 | Startfenster (Twitch/OBS-Knöpfe, Tierwahl, Status), Einzelinstanz, Tray, App-Icon | live |
+| Mehrere Tiere: bis zu 3 Begleiter (Startfenster: hinzufügen, an/aus, entfernen), eigene Griffe, laufen einander hinterher, spielen Ball, schlafen nebeneinander; Chat-Reaktionen verteilen sich, Stream-Szenen bleiben beim Haupttier; OBS zeigt alle | Test (soziale Aktionen, Verwaltung, Limit, Ziehen, OBS-Sprites); Messung live |
+| Mehrere Monitore: optional zwischen benachbarten Monitoren wandern; an-/abgesteckte Monitore, Auflösungs-/Dock-Änderungen werden übernommen | Test (simulierte 2 Monitore, unterschiedliche Größe/DPI); **offen:** echter Mehrmonitor-Desktop |
 | Einstellungen wirken sofort, ohne Neustart | Test (6 Fälle), Startfenster-Status live |
 | Tierpakete (Vorlage exportieren, importieren, auswählen) | Test (pixelgenauer Round-Trip, bösartige ZIPs) |
 
@@ -43,7 +45,7 @@ Nur geänderte Bildbereiche werden neu gezeichnet (vorher jedes Mal das ganze bi
 | Schlaf | 0,8 % → 0,3 % | 4,8 Mio. → ~16 000 px | 8 |
 | Laufen | 4,7 % → 1,6 % | 4,8 Mio. → ~16 000 px | 60 |
 
-RAM ~144 MB (RSS, HD-Tier geladen). Last des Compositors sinkt zusätzlich (nicht separat gemessen).
+RAM ~144 MB (RSS, HD-Tier geladen). **4 HD-Tiere gleichzeitig, alle laufend: 4,3 % CPU, 165 MB RAM**; Leerlauf 0,2 %, Schlaf 0,5 %. Last des Compositors sinkt zusätzlich (nicht separat gemessen).
 
 ## Tests
 `python3 -m unittest discover -s tests -t .` – 61 Tests (inkl. pixelgenauer Vergleich Teil- vs. Voll-Neuzeichnen über alle Szenen): Bewegung, Prioritäten, alle Szenen/Memes × alle
