@@ -65,17 +65,18 @@ def _thin(g, p0, p1, c):
             g[y][x] = c
 
 
-def _finish(g):
-    """Shade fur (top highlight, bottom shadow) and add a 1px dark outline."""
+def _finish(g, shade=None):
+    """Shade (top highlight, bottom shadow per color: shade={char: (light, dark)}) and add a 1px dark outline."""
+    shade = shade or {'O': ('H', 'D')}
     h, w = len(g), len(g[0])
     s = [r[:] for r in g]
     for y in range(h):
         for x in range(w):
-            if g[y][x] == 'O':
-                if y + 1 >= h or g[y + 1][x] == '.':
-                    s[y][x] = 'D'
-                elif y == 0 or g[y - 1][x] == '.':
-                    s[y][x] = 'H'
+            light, dark = shade.get(g[y][x], (None, None))
+            if dark and (y + 1 >= h or g[y + 1][x] == '.'):
+                s[y][x] = dark
+            elif light and (y == 0 or g[y - 1][x] == '.'):
+                s[y][x] = light
     out = [r[:] for r in s]
     for y in range(h):
         for x in range(w):

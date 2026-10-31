@@ -13,6 +13,7 @@
 - Tiere jetzt in 48×48 Pixeln (Dichte 3), Standardgröße 96 px (Skalierung 6 ≈ 3 Mauszeiger), runde Glanzaugen, Schnurrhaare.
 - Echter Gangzyklus mit Knie/Pfotenheben: Gehen (8 Frames), Galopp (6), Anschleichen (8, geduckt); Geschwindigkeit passend zur Schrittlänge (keine rutschenden Pfoten).
 - 6 Tierarten: Katze, Hund, Fuchs (buschiger Schwanz), Hase (Schlappohren nach hinten, Puschel), Drache (Hörner, Flügel schlagen beim Fliegen), Vogel (eigener Körper: hüpft, fliegt mit Flügelschlag, breitet bei GigaChad die Flügel aus). Vogel und Drache fliegen beim Rennen im Bogen durch die Luft.
+- Gegenstände im gleichen detaillierten Stil (48er-Raster, Schattierung): Lok mit Speichenrädern, Kuppelstange, Laterne; Waggons mit Namensschild; Kinosessel mit Knöpfen; Pizza, Kaffeetasse mit Herz und Dampf, Popcorn, Banane, Ball.
 - Flüssiger: Gehen 16, Galopp 12, Schleichen 16 Bilder pro Zyklus (~30 Bilder/s); nach dem Laufen bleibt das Tier seitlich stehen statt ruckartig nach vorne zu drehen.
 - Rassen: Katze Tuxedo/Rot getigert/Grau/Weiß/Schwarz/Creme, Hund Beagle/Golden Retriever/Husky/Corgi/Schwarzer Labrador/Weiß, Fuchs Rot/Polar/Silber/Wüste, Hase Wild/Weiß/Grau/Schwarz, Drache Grün/Rot/Lila/Gold, Vogel Wellensittich blau/grün, Kanarienvogel, Rotkehlchen.
 - Katze ursprünglich: Chibi-Stil schwarz-weiß (Tuxedo), große Glanzaugen, Schattierung; Idle/Überrascht/Cinema frontal sitzend, Laufen/Springen/Schlafen seitlich.
@@ -32,4 +33,4 @@ Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes
 - Settings-Änderung startet den Prozess neu.
 
 ## Nächste Schritte
-1. Twitch EventSub (Hype Train/Follows). 2. Gegenstände im neuen Stil. 3. Mehr Memes.
+1. Twitch EventSub (Hype Train/Follows). 2. Mehr Memes und neue Gegenstände (Karton, Kratzbaum, Kissen …). 3. Mehr Memes.
