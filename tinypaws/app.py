@@ -285,7 +285,7 @@ class SettingsDialog(QDialog):
         self.autostart = QCheckBox(checked=cfg['autostart'])
         self.poems = QCheckBox(checked=cfg['poems'])
         self.climb = QCheckBox(checked=cfg['climb'])
-        self.clientid = QLineEdit(cfg['twitch_client_id'])
+        self.clientid = secret_edit(cfg['twitch_client_id'])
         self.clientid.setPlaceholderText('dev.twitch.tv → Anwendung (öffentlich)')
         self.twitch = QLineEdit(cfg['twitch_channel'])
         self.twitch.setPlaceholderText('z.B. papaplatte')
@@ -314,6 +314,43 @@ class SettingsDialog(QDialog):
 
 
 APP_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icon.png')
+
+
+def secret_edit(text=''):
+    """Line edit that shows dots; an eye button reveals it for 5 s (never stays visible by accident)."""
+    e = QLineEdit(text)
+    e.setEchoMode(QLineEdit.Password)
+    icon = QIcon.fromTheme('view-visible')
+    if icon.isNull():  # no icon theme (Windows/macOS): draw a small eye
+        pm = QPixmap(32, 32)
+        pm.fill(Qt.transparent)
+        p = QPainter(pm)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setPen(QPen(QColor('#888'), 2.5))
+        path = QPainterPath()
+        path.moveTo(3, 16)
+        path.quadTo(16, 3, 29, 16)
+        path.quadTo(16, 29, 3, 16)
+        p.drawPath(path)
+        p.setBrush(QColor('#888'))
+        p.drawEllipse(QPointF(16, 16), 4.5, 4.5)
+        p.end()
+        icon = QIcon(pm)
+    eye = e.addAction(icon, QLineEdit.TrailingPosition)
+    eye.setToolTip('Anzeigen / Show')
+    hide = QTimer(e)
+    hide.setSingleShot(True)
+    hide.timeout.connect(lambda: e.setEchoMode(QLineEdit.Password))
+
+    def toggle():
+        if e.echoMode() == QLineEdit.Password:
+            e.setEchoMode(QLineEdit.Normal)
+            hide.start(5000)
+        else:
+            e.setEchoMode(QLineEdit.Password)
+            hide.stop()
+    eye.triggered.connect(toggle)
+    return e
 
 
 class Home(QWidget):
@@ -736,7 +773,7 @@ class TinyPaws:
         d.setWindowTitle('TinyPaws – ' + self.t('tw_setup'))
         v = QVBoxLayout(d)
         v.addWidget(QLabel(self.t('tw_setup_text')))
-        edit = QLineEdit()
+        edit = secret_edit()
         edit.setPlaceholderText('Client-ID')
         v.addWidget(edit)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
