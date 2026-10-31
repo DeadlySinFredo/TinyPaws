@@ -32,7 +32,9 @@ TR = {
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
                climbnow='Fenster klettern', clientid='Twitch Client-ID (Hype Train, Follows)',
-               tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren',
+               tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren', obs_btn='In OBS einbinden',
+               home_sub='Dein Pixel-Haustier', tw_hint='Follows, Abos, Raids & Hype Train auf deinem Kanal.',
+               show_home='TinyPaws öffnen',
                obs_copied='OBS-Link kopiert: {url}\nIn OBS: Quelle „Browser“ → URL einfügen, Breite {w}, Höhe {h}.',
                tw_setup='Twitch einrichten (einmalig)',
                tw_setup_text='Twitch verlangt eine eigene, kostenlose App-ID. Einmalig:\n\n1. Die Seite dev.twitch.tv öffnet sich – mit deinem Twitch-Konto anmelden.\n2. „Anwendung registrieren“: Name z. B. TinyPaws-DeinName\n   OAuth-Redirect-URL: http://localhost\n   Kategorie: Other   ·   Client-Typ: Öffentlich\n3. Die angezeigte Client-ID hier einfügen und OK drücken.\n\nDanach zeigt TinyPaws einen Code zum Bestätigen auf twitch.tv.',
@@ -51,7 +53,9 @@ TR = {
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
                climbnow='Climb window', clientid='Twitch Client ID (Hype Train, follows)',
-               tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link',
+               tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link', obs_btn='Add to OBS',
+               home_sub='Your pixel pet', tw_hint='Follows, subs, raids & hype train on your channel.',
+               show_home='Open TinyPaws',
                obs_copied='OBS link copied: {url}\nIn OBS: add a “Browser” source, paste the URL, width {w}, height {h}.',
                tw_setup='Set up Twitch (once)',
                tw_setup_text='Twitch requires your own free app ID. Once:\n\n1. dev.twitch.tv opens – log in with your Twitch account.\n2. “Register your application”: name e.g. TinyPaws-YourName\n   OAuth redirect URL: http://localhost\n   Category: Other   ·   Client type: Public\n3. Paste the Client ID shown there and press OK.\n\nTinyPaws then shows a code to confirm on twitch.tv.',
@@ -94,6 +98,7 @@ def _platform_setup():
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, QUrl  # noqa: E402
 from PySide6.QtGui import (QColor, QCursor, QDesktopServices, QFont, QFontMetricsF, QGuiApplication, QIcon, QImage,  # noqa: E402
                            QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QPolygonF, QTransform)
+from PySide6.QtNetwork import QLocalServer, QLocalSocket  # noqa: E402
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,  # noqa: E402
                                QFileDialog, QFormLayout, QMessageBox, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMenu,
                                QPushButton, QSpinBox, QSystemTrayIcon, QVBoxLayout, QWidget)
@@ -308,6 +313,71 @@ class SettingsDialog(QDialog):
                     first_run_done=True)
 
 
+APP_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icon.png')
+
+
+class Home(QWidget):
+    """Start window: the two things streamers need, as big buttons."""
+
+    def __init__(self, ctl):
+        super().__init__()
+        t, self.ctl = ctl.t, ctl
+        self.setWindowTitle('TinyPaws')
+        self.setMinimumWidth(420)
+        v = QVBoxLayout(self)
+        v.setSpacing(12)
+        head = QHBoxLayout()
+        logo = QLabel()
+        logo.setPixmap(QIcon(APP_ICON).pixmap(64, 64))
+        title = QLabel('<b style="font-size:20pt">TinyPaws</b><br>%s' % t('home_sub'))
+        head.addWidget(logo)
+        head.addWidget(title, 1)
+        v.addLayout(head)
+
+        def big(text, fn, color, hover):
+            b = QPushButton(text)
+            b.setMinimumHeight(56)
+            b.setStyleSheet('QPushButton{font-size:14pt;font-weight:bold;color:white;background:%s;'
+                            'border-radius:10px;padding:8px}QPushButton:hover{background:%s}' % (color, hover))
+            b.clicked.connect(fn)
+            v.addWidget(b)
+            info = QLabel('')
+            info.setWordWrap(True)
+            info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            v.addWidget(info)
+            return info
+
+        self.tw_info = big(t('tw_login'), ctl.twitch_connect, '#9146ff', '#772ce8')
+        self.obs_info = big(t('obs_btn'), self.obs, '#2f6fde', '#1f57b5')
+        row = QHBoxLayout()
+        row.addWidget(QLabel(t('choose') + ':'))
+        self.animal = QComboBox()
+        self.animal.currentIndexChanged.connect(
+            lambda i: self.animal.signalsBlocked() or ctl.set_animal(self.animal.itemData(i)))
+        row.addWidget(self.animal, 1)
+        v.addLayout(row)
+        row = QHBoxLayout()
+        for k, fn in (('panel', ctl.show_panel), ('settings', ctl.open_settings), ('quit', ctl.quit)):
+            b = QPushButton(t(k))
+            b.clicked.connect(fn)
+            row.addWidget(b)
+        v.addLayout(row)
+        self.refresh()
+
+    def obs(self):
+        self.obs_info.setText(self.ctl.copy_obs_link())
+
+    def refresh(self):
+        c = self.ctl
+        self.animal.blockSignals(True)
+        self.animal.clear()
+        for label, key in animal_choices(c.cfg['lang']):
+            self.animal.addItem(label, key)
+        self.animal.setCurrentIndex(max(0, self.animal.findData(c.current_animal())))
+        self.animal.blockSignals(False)
+        self.tw_info.setText(c.es_state or c.t('tw_hint'))
+
+
 class Panel(QWidget):
     """Local test buttons: every animation, scene and stream event without any platform."""
 
@@ -405,7 +475,7 @@ class TinyPaws:
         if cfg['interact']:
             self.handle.show()
         self.drag_off, self.items, self.hpos, self.cursor_t, self.raise_t = None, None, None, 0.0, 0.0
-        self.panel, self.obs = None, None
+        self.panel, self.obs, self.home = None, None, None
         if cfg['obs']:
             try:
                 self.obs = ObsServer(cfg['obs_port'], cfg['fps'], self.skin)
@@ -434,6 +504,7 @@ class TinyPaws:
 
     def _build_menu(self):
         m = QMenu()
+        m.addAction(self.t('show_home'), self.show_home)
         self.choose_menu = m.addMenu(self.t('choose'))
         self.choose_menu.aboutToShow.connect(self._fill_choose)
         m.addAction(self.t('panel'), self.show_panel)
@@ -452,13 +523,13 @@ class TinyPaws:
         m.addSeparator()
         m.addAction(self.t('quit'), self.quit)
         self.menu = m
-        self.tray = QSystemTrayIcon(QIcon(self.renderer.pixmap(self.skin + 'idle')))
+        self.tray = QSystemTrayIcon(QIcon(APP_ICON))
         tip = 'TinyPaws – %s' % self.cfg['name']
         if self.cfg['twitch_channel']:
             tip += '\nTwitch: #%s' % self.cfg['twitch_channel']
         self.tray.setToolTip(tip)
         self.tray.setContextMenu(m)
-        self.tray.activated.connect(lambda r: self.show_panel() if r == QSystemTrayIcon.Trigger else None)
+        self.tray.activated.connect(lambda r: self.show_home() if r == QSystemTrayIcon.Trigger else None)
         self.tray.show()
 
     # ---------------------------------------------------------------- loop
@@ -598,10 +669,11 @@ class TinyPaws:
         p.action, p.queue = None, []  # restart behaviour with the new body
         p.y = p.floor
         p.say(brain.SPECIES[p.species], 1.5)
-        self.tray.setIcon(QIcon(self.renderer.pixmap(new_skin + 'idle')))
         settings.save(self.cfg)
         if self.panel:
             self.panel.sync_animal()
+        if self.home:
+            self.home.refresh()
         if self.obs:  # the OBS page only has the old pet's frames; serve the new set
             self.obs.close()
             self.obs = ObsServer(self.cfg['obs_port'], self.cfg['fps'], new_skin)
@@ -685,6 +757,8 @@ class TinyPaws:
     def es_status(self, text):
         self.es_state = text
         self.tray.setToolTip('TinyPaws – %s\nTwitch: %s' % (self.cfg['name'], text))
+        if self.home:
+            self.home.refresh()
         if not text.startswith('verbunden'):
             return
         if getattr(self, 'code_dialog', None):
@@ -705,14 +779,23 @@ class TinyPaws:
                 settings.save(self.cfg)
             except OSError as e:
                 QMessageBox.warning(None, 'TinyPaws', 'OBS: %s' % e)
-                return
+                return 'OBS: %s' % e
         url = 'http://127.0.0.1:%d/' % self.obs.port
         QGuiApplication.clipboard().setText(url)
         msg = self.t('obs_copied').format(url=url, w=self.geo.width(), h=self.geo.height())
         self.tray.showMessage('TinyPaws', msg)
         self.pet.say('OBS ✓', 2.0)
+        return msg
 
     # ---------------------------------------------------------------- windows
+    def show_home(self):
+        if self.home is None:
+            self.home = Home(self)
+        self.home.refresh()
+        self.home.show()
+        self.home.raise_()
+        self.home.activateWindow()
+
     def show_panel(self):
         if self.panel is None:
             self.panel = Panel(self)
@@ -729,7 +812,7 @@ class TinyPaws:
             # shortcut: restart to apply scale/screen/lang everywhere; fine for a settings change
             root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             os.environ['PYTHONPATH'] = root + os.pathsep + os.environ.get('PYTHONPATH', '')
-            cmd = settings.launch_cmd()
+            cmd = settings.launch_cmd() + ['--autostart']
             if self.kwin:
                 self.kwin.close()
             os.execv(cmd[0], cmd)
@@ -752,11 +835,25 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog='tinypaws')
     ap.add_argument('--panel', action='store_true', help='open the test panel on start')
     ap.add_argument('--reset', action='store_true', help='forget settings and run setup again')
+    ap.add_argument('--autostart', action='store_true', help='started on login: stay in the tray')
     args = ap.parse_args(argv)
     _platform_setup()
     app = QApplication(sys.argv[:1])
     app.setApplicationName('TinyPaws')
+    app.setDesktopFileName('tinypaws')
+    app.setWindowIcon(QIcon(APP_ICON))
     app.setQuitOnLastWindowClosed(False)
+    # single instance: a second start just opens the running pet's start window
+    name = 'tinypaws-%s' % (os.environ.get('USER') or os.environ.get('USERNAME') or 'user')
+    probe = QLocalSocket()
+    probe.connectToServer(name)
+    if probe.waitForConnected(300):
+        probe.write(b'show')
+        probe.waitForBytesWritten(300)
+        return 0
+    QLocalServer.removeServer(name)  # stale socket after a crash
+    server = QLocalServer()
+    server.listen(name)
     INSTALLED.update(packs.load_packs())
     cfg = settings.load() if not args.reset else dict(settings.DEFAULTS)
     if not cfg['first_run_done']:
@@ -767,6 +864,9 @@ def main(argv=None):
         settings.save(cfg)
         settings.set_autostart(cfg['autostart'])
     ctl = TinyPaws(app, cfg, show_panel=args.panel)
+    server.newConnection.connect(lambda: (server.nextPendingConnection(), ctl.show_home()))
+    if not args.autostart:
+        ctl.show_home()
     # quit cleanly on logout/kill so the KWin script gets unloaded and settings saved
     signal.signal(signal.SIGTERM, lambda *_: ctl.quit())
     signal.signal(signal.SIGINT, lambda *_: ctl.quit())

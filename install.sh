@@ -10,6 +10,7 @@ Type=Application
 Name=TinyPaws
 Comment=Pixel desktop pet
 Exec=env PYTHONPATH="$ROOT" python3 -m tinypaws
+Icon=$ROOT/tinypaws/icon.png
 Categories=Game;Amusement;
 DESK
 echo "Installed. Start from the app menu or: PYTHONPATH=\"$ROOT\" python3 -m tinypaws --panel"

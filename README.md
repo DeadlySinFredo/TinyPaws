@@ -16,6 +16,7 @@ python3 -m tinypaws --panel
 - Erster Start: Einrichtungsassistent (Name, Pixel-Größe, FPS, Zufallsaktivität, Sprache, Monitor, Autostart, Gedichte).
 - **Linke Maustaste auf der Katze**: ziehen und fallen lassen. **Doppelklick**: Miau. **Rechtsklick**: Menü.
 - Überall sonst gehen Klicks durch zu deinen Fenstern.
+- **Startfenster** (Klick aufs Tray-Symbol oder TinyPaws erneut starten): große Knöpfe **Mit Twitch verbinden** und **In OBS einbinden**, Tierauswahl, Testpanel, Einstellungen.
 - **Tier wechseln**: Tray-Menü oder Rechtsklick auf das Tier → „Tier wählen“ (sofort, ohne Neustart), oder oben im Testpanel.
 - Tray-Icon: Testpanel, Meme-Szenen, Interaktion an/aus, Einstellungen, Beenden.
 - `--panel` öffnet das Testpanel, `--reset` startet den Assistenten neu.

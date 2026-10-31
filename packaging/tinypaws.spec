@@ -8,13 +8,14 @@ EXCLUDES = ['PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets', 'PySide6.Qt
             'PySide6.QtDesigner', 'PySide6.QtBluetooth', 'PySide6.QtPositioning', 'tkinter']
 
 a = Analysis([ROOT + '/packaging/tinypaws_entry.py'], pathex=[ROOT],
-             datas=[(ROOT + '/tinypaws/reactions.json', 'tinypaws'), (ROOT + '/assets/pets', 'assets/pets')],
+             datas=[(ROOT + '/tinypaws/reactions.json', 'tinypaws'), (ROOT + '/tinypaws/icon.png', 'tinypaws'),
+                    (ROOT + '/assets/pets', 'assets/pets')],
              hiddenimports=['PySide6.QtDBus', 'PySide6.QtWebSockets', 'PySide6.QtNetwork'],
              excludes=EXCLUDES)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='TinyPaws', console=False,
-          icon=ROOT + '/packaging/tinypaws.ico' if sys.platform == 'win32' else None)
+          icon=ROOT + '/packaging/tinypaws.png')  # Pillow converts it to .ico (Windows) / .icns (macOS)
 coll = COLLECT(exe, a.binaries, a.datas, name='TinyPaws')
 if sys.platform == 'darwin':
-    app = BUNDLE(coll, name='TinyPaws.app', bundle_identifier='org.tinypaws.TinyPaws',
+    app = BUNDLE(coll, name='TinyPaws.app', bundle_identifier='org.tinypaws.TinyPaws', icon=ROOT + '/packaging/tinypaws.png',
                  info_plist={'LSUIElement': True, 'NSHighResolutionCapable': True})  # no Dock icon: lives in the tray

@@ -1,4 +1,4 @@
-# Entwicklungsstand (2026-10-31, v0.2.0)
+# Entwicklungsstand (2026-10-31, v0.3.0)
 
 ## Funktioniert (auf CachyOS / KDE Plasma / Wayland via XWayland live geprüft)
 - Katze erscheint unten auf dem gewählten Monitor über der Taskleiste, über normalen Fenstern, ohne Taskleisteneintrag.
@@ -14,6 +14,8 @@
 - Echter Gangzyklus mit Knie/Pfotenheben: Gehen (8 Frames), Galopp (6), Anschleichen (8, geduckt); Geschwindigkeit passend zur Schrittlänge (keine rutschenden Pfoten).
 - 6 Tierarten: Katze, Hund, Fuchs (buschiger Schwanz), Hase (Schlappohren nach hinten, Puschel), Drache (Hörner, Flügel schlagen beim Fliegen), Vogel (eigener Körper: hüpft, fliegt mit Flügelschlag, breitet bei GigaChad die Flügel aus). Vogel und Drache fliegen beim Rennen im Bogen durch die Luft.
 - 11 Memes über eine datengetriebene Meme-Engine (Zeitleiste aus Schritten): This is Fine (Flammen + Kaffee), Bonk (Spielzeughammer + Sterne), Let Him Cook (Kochmütze + Herd + Dampf), Dramatic Exit (Koffer, läuft weg, fällt zurück), Achievement (Pokal + Banner), RIP (Grabstein, „Nur Spaß!“), Sus, Cat Distribution System (zweites Tier aus dem Karton), Tanz-Party (Noten), Brainrot (Chaos), Schreckmoment (Geist). Alle per Testpanel und Chat auslösbar.
+- Startfenster mit großen Knöpfen (Twitch verbinden, In OBS einbinden), Einzelinstanz (erneuter Start öffnet das Startfenster), Autostart startet still im Tray. Eigenes App-Icon (Fenster, Taskleiste, Tray, Startmenü, .exe, .app).
+- Twitch-Login live bestätigt (Konto verbunden, EventSub-Abos ohne Fehler).
 - HD-Sprites (aus TinyPaws_Alle_34_Varianten_HD_und_Fluessig.zip): alle 28 Rassen als 120×120-Sheets (Dichte 6, doppelte Auflösung) mit doppelt so vielen Lauf-Bildern (Gehen 32, Galopp/Flug 24, Schleichen 32) in `assets/pets/`. Die 6 zusätzlichen Sheets der ZIP waren byte-identisch mit der jeweiligen Grundrasse. Geprüft: Paketregeln, kein Clipping, keine leeren Bilder, saubere Schleifenübergänge, Deckungsgleichheit mit den alten Sprites (≤ 0,17 Einheiten → Lokfenster/Sessel/Fensterkante passen), alle 28 live durchgeschaltet (Laden ~0,6 s je Tier). Gleiche Zykluszeit → nicht langsamer; beim Laufen 60 statt 30 Bilder/s, damit die Zwischenbilder sichtbar sind. Der prozedurale Generator bleibt als automatischer Ersatz, Backup-Tag `backup/pre-hd-sprites`.
 - Pakete: GitHub Actions baut Linux (76 MB), Windows (48 MB), macOS arm64 (34 MB) und führt die Tests auf allen drei Systemen aus (grün). Arch-PKGBUILD lokal gebaut (Tests im check()). Lokaler PyInstaller-Build gestartet: KWin-Skript + OBS laufen. **Nicht geprüft**: die Windows-/macOS-Pakete auf echter Hardware (Fenster-Overlay, Tray, Autostart).
 - Eigene Tiere: Vorlage exportieren → umzeichnen → importieren; geprüft per Round-Trip-Test (pixelgenau), Szenen-Test mit Paket-Tier und Abwehr bösartiger ZIPs (Pfad-Tricks, falsche Felder, fehlende Dateien).
