@@ -24,12 +24,14 @@ python3 -m tinypaws --panel
 
 ## Installation
 
-| System | Weg |
-|---|---|
-| **CachyOS / Arch** | `packaging/arch/PKGBUILD`: `cd packaging/arch && TINYPAWS_REPO=file://$PWD/../.. TINYPAWS_BRANCH=dev makepkg -si` (privates Repo → lokaler Checkout). Danach im Startmenü „TinyPaws“ oder `tinypaws`. |
-| **Linux (andere)** | `TinyPaws-linux-x86_64.tar.gz` aus GitHub Actions/Releases entpacken, `TinyPaws/TinyPaws` starten. |
-| **Windows 10/11** | `TinyPaws-windows-x86_64.zip` entpacken, `TinyPaws.exe` starten. Unsigniert: SmartScreen → „Weitere Informationen“ → „Trotzdem ausführen“. |
-| **macOS (Apple Silicon)** | `TinyPaws-macos-arm64.zip` entpacken, `TinyPaws.app` per Rechtsklick → „Öffnen“ (unsigniert). Lebt im Tray, kein Dock-Symbol. |
+**Downloads (neueste Version):** [Alle Releases](https://github.com/DeadlySinFredo/TinyPaws/releases) · [Neuestes Release](https://github.com/DeadlySinFredo/TinyPaws/releases/latest)
+
+| System | Download | Weg |
+|---|---|---|
+| **CachyOS / Arch** | – | `packaging/arch/PKGBUILD`: `cd packaging/arch && TINYPAWS_REPO=file://$PWD/../.. TINYPAWS_BRANCH=dev makepkg -si` (privates Repo → lokaler Checkout). Danach im Startmenü „TinyPaws“ oder `tinypaws`. |
+| **Linux (andere)** | [TinyPaws-linux-x86_64.tar.gz](https://github.com/DeadlySinFredo/TinyPaws/releases/latest/download/TinyPaws-linux-x86_64.tar.gz) | Entpacken, `TinyPaws/TinyPaws` starten. |
+| **Windows 10/11** | [TinyPaws-windows-x86_64.zip](https://github.com/DeadlySinFredo/TinyPaws/releases/latest/download/TinyPaws-windows-x86_64.zip) | Entpacken, `TinyPaws.exe` starten. Unsigniert: SmartScreen → „Weitere Informationen“ → „Trotzdem ausführen“. |
+| **macOS (Apple Silicon)** | [TinyPaws-macos-arm64.zip](https://github.com/DeadlySinFredo/TinyPaws/releases/latest/download/TinyPaws-macos-arm64.zip) | Entpacken, `TinyPaws.app` per Rechtsklick → „Öffnen“ (unsigniert). Lebt im Tray, kein Dock-Symbol. |
 
 Builds entstehen automatisch bei jedem Push (GitHub Actions, Reiter „Actions“ → Artefakte);
 ein Tag `v*` erzeugt ein Release mit allen drei Paketen.
