@@ -15,6 +15,7 @@ from pathlib import Path
 from . import brain, settings
 from .obs import ObsServer
 from . import packs
+from .screens import exits as screen_exits, neighbour as screen_neighbour
 from .reactions import ChatEngine
 from .twitch import TwitchChat, valid_channel
 from .eventsub import TwitchEventSub, valid_client_id
@@ -31,7 +32,7 @@ TR = {
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
-               climbnow='Fenster klettern', clientid='Twitch Client-ID (Hype Train, Follows)',
+               climbnow='Fenster klettern', roam='Zwischen Monitoren wandern', clientid='Twitch Client-ID (Hype Train, Follows)',
                tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren', obs_btn='In OBS einbinden',
                obs_port_busy='OBS-Quelle aus: Port {0} ist belegt ({1}). Anderen Port in den Einstellungen wählen.',
                st_pet='Tier: {0}', st_obs_on='OBS: aktiv – {0} ({1} Quelle(n) verbunden)', st_obs_off='OBS: aus',
@@ -55,7 +56,7 @@ TR = {
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
-               climbnow='Climb window', clientid='Twitch Client ID (Hype Train, follows)',
+               climbnow='Climb window', roam='Wander between monitors', clientid='Twitch Client ID (Hype Train, follows)',
                tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link', obs_btn='Add to OBS',
                obs_port_busy='OBS source off: port {0} is busy ({1}). Pick another port in settings.',
                st_pet='Pet: {0}', st_obs_on='OBS: on – {0} ({1} source(s) connected)', st_obs_off='OBS: off',
@@ -323,6 +324,7 @@ class SettingsDialog(QDialog):
         self.autostart = QCheckBox(checked=cfg['autostart'])
         self.poems = QCheckBox(checked=cfg['poems'])
         self.climb = QCheckBox(checked=cfg['climb'])
+        self.roam = QCheckBox(checked=cfg['roam'])
         self.clientid = secret_edit(cfg['twitch_client_id'])
         self.clientid.setPlaceholderText('dev.twitch.tv → Anwendung (öffentlich)')
         self.twitch = QLineEdit(cfg['twitch_channel'])
@@ -330,7 +332,7 @@ class SettingsDialog(QDialog):
         self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
         for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs), ('twitch', self.twitch), ('clientid', self.clientid), ('climb', self.climb), ('roam', self.roam)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -345,7 +347,7 @@ class SettingsDialog(QDialog):
         return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=animal, breed=breed, pack=pack,
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
-                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(),
+                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(), climb=self.climb.isChecked(), roam=self.roam.isChecked(),
                     twitch_channel=self.twitch.text().strip().lstrip('#').lower(),
                     twitch_client_id=self.clientid.text().strip().lower(),
                     first_run_done=True)
@@ -569,6 +571,11 @@ class TinyPaws:
             self.handle.show()
         self.drag_off, self.items, self.hpos, self.cursor_t, self.raise_t = None, None, None, 0.0, 0.0
         self.full_repaint = True
+        self._update_exits()
+        app.screenAdded.connect(self._screens_changed)
+        app.screenRemoved.connect(self._screens_changed)
+        for sc in QGuiApplication.screens():
+            sc.availableGeometryChanged.connect(self._screens_changed)
         self.panel, self.obs, self.home, self.obs_error = None, None, None, ''
         if cfg['obs']:
             self._start_obs()
@@ -659,6 +666,8 @@ class TinyPaws:
         while self.es and self.es.events:
             brain.handle_event(pet, self.engine, self.es.events.pop(0))
         pet.update(dt)
+        if pet.left_by:
+            self._roam_over(pet.left_by)
         items = pet.render()
         if items != self.items:
             # repaint only where something was or is now drawn (full overlay = whole screen)
@@ -931,6 +940,7 @@ class TinyPaws:
             self.set_animal('pack/%s' % cfg['pack'] if cfg['pack'] in INSTALLED else '%s/%s' % (cfg['animal'], cfg['breed']))
         if (cfg['scale'], cfg['screen']) != (old['scale'], old['screen']):
             self._apply_geometry()
+            self._update_exits()
         if cfg['interact'] != old['interact']:
             self.interact_act.setChecked(cfg['interact'])
         if (cfg['obs'], cfg['obs_port']) != (old['obs'], old['obs_port']) or not cfg['obs']:
@@ -948,6 +958,8 @@ class TinyPaws:
             if self.twitch:
                 self.twitch.close()
             self.twitch = TwitchChat(cfg['twitch_channel']) if valid_channel(cfg['twitch_channel']) else None
+        if cfg['roam'] != old['roam']:
+            self._update_exits()
         if cfg['climb'] != old['climb']:
             if self.kwin:
                 self.kwin.close()
@@ -986,6 +998,47 @@ class TinyPaws:
         self.handle.resize(16 * s, 16 * s)
         self.items = self.hpos = None
         self.full_repaint = True
+
+    @staticmethod
+    def _screen_rects():
+        return [(g.x(), g.y(), g.width(), g.height()) for g in (sc.availableGeometry() for sc in QGuiApplication.screens())]
+
+    def _screen_index(self):
+        n = len(QGuiApplication.screens())
+        return self.cfg['screen'] if self.cfg['screen'] < n else QGuiApplication.screens().index(QGuiApplication.primaryScreen())
+
+    def _update_exits(self):
+        self.pet.exits = screen_exits(self._screen_rects(), self._screen_index()) if self.cfg['roam'] else ()
+
+    def _screens_changed(self, *_):
+        """Monitor plugged/unplugged or resized (dock, resolution, scaling): re-fit the pet."""
+        for sc in QGuiApplication.screens():
+            try:
+                sc.availableGeometryChanged.disconnect(self._screens_changed)
+            except (RuntimeError, TypeError):
+                pass
+            sc.availableGeometryChanged.connect(self._screens_changed)
+        if self.cfg['screen'] >= len(QGuiApplication.screens()):
+            self.cfg['screen'] = self._screen_index()  # its monitor is gone: fall back to the primary one
+        self._apply_geometry()
+        self._update_exits()
+
+    def _roam_over(self, direction):
+        """Pet walked off an edge: continue on the neighbouring monitor, or turn back if there is none."""
+        p = self.pet
+        p.left_by = 0
+        nxt = screen_neighbour(self._screen_rects(), self._screen_index(), direction) if self.cfg['roam'] else None
+        if nxt is None:
+            p.x = p.clampx(p.x)
+            return
+        self.cfg['screen'] = nxt
+        settings.save(self.cfg)
+        self._apply_geometry()
+        self._update_exits()
+        p.facing = direction
+        p.x = -16 * p.s if direction > 0 else p.W
+        target = p.rng.uniform(0.05, 0.35) * p.maxx
+        p.play(brain.Walk(target if direction > 0 else p.maxx - target))
 
     def status_lines(self):
         """Human-readable state for the start window."""

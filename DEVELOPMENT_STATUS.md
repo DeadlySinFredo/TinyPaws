@@ -13,6 +13,7 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 | 11 Memes + Hype Train, GigaChad, Absolute Cinema | Test (alle × alle Tierarten), live Stichproben |
 | Fenster klettern + oben schlafen (KDE, Laufzeit-KWin-Skript) | live bestätigt |
 | Startfenster (Twitch/OBS-Knöpfe, Tierwahl, Status), Einzelinstanz, Tray, App-Icon | live |
+| Mehrere Monitore: optional zwischen benachbarten Monitoren wandern; an-/abgesteckte Monitore, Auflösungs-/Dock-Änderungen werden übernommen | Test (simulierte 2 Monitore, unterschiedliche Größe/DPI); **offen:** echter Mehrmonitor-Desktop |
 | Einstellungen wirken sofort, ohne Neustart | Test (6 Fälle), Startfenster-Status live |
 | Tierpakete (Vorlage exportieren, importieren, auswählen) | Test (pixelgenauer Round-Trip, bösartige ZIPs) |
 

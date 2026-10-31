@@ -106,6 +106,24 @@ class Walk(Action):
         return False
 
 
+class Roam(Walk):
+    """Walk off a screen edge that has a neighbouring monitor; the app then moves the pet across."""
+
+    def __init__(self, direction, prio=None):
+        super().__init__(0, prio=prio)
+        self.direction = direction
+
+    def start(self, pet):
+        super().start(pet)
+        self.tx = -17 * pet.s if self.direction < 0 else pet.W + pet.s
+
+    def step(self, pet, dt):
+        done = super().step(pet, dt)
+        if done:
+            pet.left_by = self.direction
+        return done
+
+
 class Sleep(Action):
     def __init__(self, dur=12.0, prio=None):
         super().__init__(prio)
@@ -800,6 +818,7 @@ class Pet:
         self.facing, self.frame = 1, 'idle'
         self.action, self.queue, self.particles = None, [], []
         self.bubble, self.held, self.ledges = None, False, []
+        self.exits, self.left_by = (), 0  # screen edges with a neighbouring monitor (-1/1); edge just walked off
 
     floor = property(lambda self: self.H - 16 * self.s)
     maxx = property(lambda self: self.W - 16 * self.s)
@@ -857,6 +876,8 @@ class Pet:
         ] + [(w * L, lambda n=n: Meme(n, prio=U)) for n, w, only in LIFE if not only or self.species in only]
         if self.ledges:
             table.append((0.9 * L, lambda: Climb(r.choice(self.ledges)[0])))
+        for d in self.exits:  # wander over to the next monitor
+            table.append((0.6 * L, lambda d=d: Roam(d)))
         pick = r.uniform(0, sum(w for w, _ in table))
         for w, make in table:
             pick -= w
