@@ -11,6 +11,7 @@ import sys
 import time
 
 from . import brain, settings
+from .obs import ObsServer
 from .reactions import ChatEngine
 from .sprites import PALETTE, SPRITES
 
@@ -24,7 +25,7 @@ TR = {
                autostart='Beim Login starten', screen='Monitor', poems='GigaChad-Gedichte',
                welcome='Willkommen bei TinyPaws! Richte deine Katze ein.', animal='Tier',
                scenes='Meme-Szenen', events='Stream-Events (Simulation)', chat='Chat-Simulation',
-               actions='Aktionen'),
+               actions='Aktionen', obs='OBS-Browser-Quelle'),
     'en': dict(panel='Test panel', settings='Settings', interact='Interaction (drag)', quit='Quit',
                walk='Walk', run='Run', jump='Jump', sleep='Sleep', sit='Sit', dance='Dance',
                teleport='Teleport', pizza='Pizza', coffee='Coffee', ball='Ball', hype='Hype Train',
@@ -34,7 +35,7 @@ TR = {
                autostart='Start on login', screen='Monitor', poems='GigaChad poems',
                welcome='Welcome to TinyPaws! Set up your cat.', animal='Animal',
                scenes='Meme scenes', events='Stream events (simulated)', chat='Chat simulation',
-               actions='Actions'),
+               actions='Actions', obs='OBS browser source'),
 }
 DEMO_NAMES = ['PixelFuchs92', 'NyanNina', 'Bernd_TTV', 'LokiLoaf', 'xXChonkXx', 'Mausi', 'TurboTom',
               'Keksi', 'ZugFan', 'Lenny']
@@ -221,9 +222,10 @@ class SettingsDialog(QDialog):
         self.screen.setCurrentIndex(min(cfg['screen'], self.screen.count() - 1))
         self.autostart = QCheckBox(checked=cfg['autostart'])
         self.poems = QCheckBox(checked=cfg['poems'])
+        self.obs = QCheckBox('http://127.0.0.1:%d/' % cfg['obs_port'], checked=cfg['obs'])
         for k, w in (('name', self.name), ('animal', self.animal), ('scale', self.scale), ('fps', self.fps),
                      ('random', self.rand), ('lang', self.lang), ('screen', self.screen),
-                     ('autostart', self.autostart), ('poems', self.poems)):
+                     ('autostart', self.autostart), ('poems', self.poems), ('obs', self.obs)):
             form.addRow(t[k], w)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         bb.accepted.connect(self.accept)
@@ -234,7 +236,8 @@ class SettingsDialog(QDialog):
         return dict(self.cfg, name=self.name.text().strip() or 'Mochi', animal=self.animal.currentData(),
                     scale=self.scale.value(), fps=self.fps.value(), random_level=self.rand.value() / 100,
                     lang=self.lang.currentData(), screen=self.screen.currentData(),
-                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), first_run_done=True)
+                    autostart=self.autostart.isChecked(), poems=self.poems.isChecked(), obs=self.obs.isChecked(),
+                    first_run_done=True)
 
 
 class Panel(QWidget):
@@ -310,7 +313,12 @@ class TinyPaws:
         if cfg['interact']:
             self.handle.show()
         self.drag_off, self.items, self.hpos, self.cursor_t, self.raise_t = None, None, None, 0.0, 0.0
-        self.panel = None
+        self.panel, self.obs = None, None
+        if cfg['obs']:
+            try:
+                self.obs = ObsServer(cfg['obs_port'], cfg['fps'])
+            except OSError as e:  # port taken: desktop pet still works
+                print('tinypaws: OBS server off: %s' % e, file=sys.stderr)
         self._build_menu()
         self.last = time.monotonic()
         self.timer = QTimer()
@@ -363,6 +371,8 @@ class TinyPaws:
         if items != self.items:
             self.items = self.overlay.items = items
             self.overlay.update()
+            if self.obs:
+                self.obs.publish(self.geo.width(), self.geo.height(), self.cfg['scale'], items)
         hp = (self.geo.x() + int(pet.x), self.geo.y() + int(pet.y))
         if hp != self.hpos and self.drag_off is None:
             self.hpos = hp
@@ -440,6 +450,8 @@ class TinyPaws:
     def quit(self):
         self.cfg['x'] = self.pet.x
         settings.save(self.cfg)
+        if self.obs:
+            self.obs.close()
         self.app.quit()
 
 

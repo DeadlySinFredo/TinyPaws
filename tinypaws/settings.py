@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 DEFAULTS = dict(name='Mochi', animal='cat', scale=4, fps=30, random_level=1.0, lang='de',
-                autostart=False, screen=0, x=None, poems=True, interact=True, first_run_done=False)
+                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, first_run_done=False)
 
 
 def config_dir():
@@ -23,7 +23,7 @@ def load(path=None):
         pass
     # validate: a broken file must never crash startup
     for k, lo, hi, typ in (('scale', 1, 12, int), ('fps', 5, 60, int), ('screen', 0, 16, int),
-                           ('random_level', 0.0, 3.0, float)):
+                           ('random_level', 0.0, 3.0, float), ('obs_port', 1024, 65535, int)):
         try:
             cfg[k] = max(lo, min(hi, typ(cfg[k])))
         except (TypeError, ValueError):

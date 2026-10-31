@@ -6,7 +6,7 @@
 - [x] **Phase 4** – Chat Reaction Engine ohne KI (33 Regeln, JSON) · Ziel 100+ Regeln.
 - [ ] **Phase 5** – Twitch (EventSub + IRC), Kick, YouTube Live, TikTok – mit Reconnect, Rate-Limits, sicherer Tokenablage (Secret Service/libsecret).
 - [x] **Phase 6** – Hype Train (Level 1–10, Waggons, Namen, Rauch, Regenbogen-Rauch, Hupe, Feier), GigaChad (Kopfdrehung, Strahlen, Pose, eigene Gedichte DE/EN), Absolute Cinema (Sessel, Spotlight, Filmstreifen, Popcorn).
-- [ ] **Phase 7** – OBS: lokaler HTTP/WebSocket-Server + Browser-Quelle (Canvas-Renderer der gleichen Draw-Items).
+- [x] **Phase 7** – OBS-Browser-Quelle: lokaler HTTP-Server (nur 127.0.0.1) + SSE, Canvas-Renderer der gleichen Draw-Items, transparent, skalierbar. Offen: eigene Welt-Größe/mehrere Tiere nur für OBS.
 - [ ] **Phase 8** – Weitere Memes (This is Fine mit Flammen, Bonk-Hammer, Kochmütze, Koffer-Exit, Cat Distribution System …).
 - [ ] **Phase 9** – Tierpaket-Format (ZIP + JSON-Manifest + PNG-Spritesheets, validiert) und Editor.
 - [ ] **Phase 10** – Optionale KI (Ollama/llama.cpp/OpenAI-kompatibel/Claude), ohne Shell-Zugriff für Zuschauer.

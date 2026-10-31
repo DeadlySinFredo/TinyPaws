@@ -1,4 +1,4 @@
-# Entwicklungsstand (2026-10-30, v0.1.0)
+# Entwicklungsstand (2026-10-31, v0.2.0)
 
 ## Funktioniert (auf CachyOS / KDE Plasma / Wayland via XWayland live geprüft)
 - Katze erscheint unten auf dem gewählten Monitor über der Taskleiste, über normalen Fenstern, ohne Taskleisteneintrag.
@@ -7,10 +7,11 @@
 - Schaut zum Mauszeiger, wenn sie in der Nähe ist und idle ist.
 - Hype Train, GigaChad, Absolute Cinema über Testpanel, Tray und Chat-Simulation.
 - Einstellungen + Position werden gespeichert und beim Start wiederhergestellt; Autostart per XDG.
+- OBS-Browser-Quelle `http://127.0.0.1:8737/` (in Einstellungen aktivierbar), live im Browser geprüft: Katze erscheint transparent und synchron.
 - Gemessen: ~1 % CPU (30 FPS, 1 Kern), ~100 MB RSS; im Schlaf 8 FPS.
 
 ## Getestet
-- `python3 -m unittest discover -s tests -t .` – 19 Tests: Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
+- `python3 -m unittest discover -s tests -t .` – 20 Tests (inkl. OBS-Server: Seite, Assets, Stream, 404): Sprites, Bewegung, Schlaf, Ziehen/Fallen, 20 000 Zufallsschritte bleiben auf dem Bildschirm, Prioritäten/Queue, alle drei Szenen laufen durch (Hype Train kehrt zur Startposition zurück), Chat-Matching, Cooldowns, kaputte Regex, Event-Routing, Settings-Roundtrip + Validierung.
 - `scripts/render_preview.py` rendert Szenen offscreen als PNG (visuell geprüft).
 - Live-Start + Screenshot auf dem Desktop.
 
@@ -23,4 +24,4 @@ Siehe ROADMAP: weitere Tierarten, echte Stream-Connectors, OBS-Modus, mehr Memes
 - Settings-Änderung startet den Prozess neu.
 
 ## Nächste Schritte
-1. OBS-Browser-Quelle (Phase 7). 2. Twitch-Connector. 3. Hund + Vogel. 4. Mehr Memes.
+1. Twitch-Connector. 2. Hund + Vogel. 3. Mehr Memes.
