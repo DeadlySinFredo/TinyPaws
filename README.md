@@ -16,6 +16,7 @@ python3 -m tinypaws --panel
 - Erster Start: Einrichtungsassistent (Name, Pixel-Größe, FPS, Zufallsaktivität, Sprache, Monitor, Autostart, Gedichte).
 - **Linke Maustaste auf der Katze**: ziehen und fallen lassen. **Doppelklick**: Miau. **Rechtsklick**: Menü.
 - Überall sonst gehen Klicks durch zu deinen Fenstern.
+- **Startfenster** (Klick aufs Tray-Symbol oder TinyPaws erneut starten): große Knöpfe **Mit Twitch verbinden** und **In OBS einbinden**, Tierauswahl, Testpanel, Einstellungen.
 - **Tier wechseln**: Tray-Menü oder Rechtsklick auf das Tier → „Tier wählen“ (sofort, ohne Neustart), oder oben im Testpanel.
 - Tray-Icon: Testpanel, Meme-Szenen, Interaktion an/aus, Einstellungen, Beenden.
 - `--panel` öffnet das Testpanel, `--reset` startet den Assistenten neu.
@@ -23,12 +24,14 @@ python3 -m tinypaws --panel
 
 ## Installation
 
-| System | Weg |
-|---|---|
-| **CachyOS / Arch** | `packaging/arch/PKGBUILD`: `cd packaging/arch && TINYPAWS_REPO=file://$PWD/../.. TINYPAWS_BRANCH=dev makepkg -si` (privates Repo → lokaler Checkout). Danach im Startmenü „TinyPaws“ oder `tinypaws`. |
-| **Linux (andere)** | `TinyPaws-linux-x86_64.tar.gz` aus GitHub Actions/Releases entpacken, `TinyPaws/TinyPaws` starten. |
-| **Windows 10/11** | `TinyPaws-windows-x86_64.zip` entpacken, `TinyPaws.exe` starten. Unsigniert: SmartScreen → „Weitere Informationen“ → „Trotzdem ausführen“. |
-| **macOS (Apple Silicon)** | `TinyPaws-macos-arm64.zip` entpacken, `TinyPaws.app` per Rechtsklick → „Öffnen“ (unsigniert). Lebt im Tray, kein Dock-Symbol. |
+**Downloads (neueste Version):** [Alle Releases](https://github.com/DeadlySinFredo/TinyPaws/releases) · [Neuestes Release](https://github.com/DeadlySinFredo/TinyPaws/releases/latest)
+
+| System | Download | Weg |
+|---|---|---|
+| **CachyOS / Arch** | – | `packaging/arch/PKGBUILD`: `cd packaging/arch && TINYPAWS_REPO=file://$PWD/../.. TINYPAWS_BRANCH=dev makepkg -si` (privates Repo → lokaler Checkout). Danach im Startmenü „TinyPaws“ oder `tinypaws`. |
+| **Linux (andere)** | [TinyPaws-linux-x86_64.tar.gz](https://github.com/DeadlySinFredo/TinyPaws/releases/latest/download/TinyPaws-linux-x86_64.tar.gz) | Entpacken, `TinyPaws/TinyPaws` starten. |
+| **Windows 10/11** | [TinyPaws-windows-x86_64.zip](https://github.com/DeadlySinFredo/TinyPaws/releases/latest/download/TinyPaws-windows-x86_64.zip) | Entpacken, `TinyPaws.exe` starten. Unsigniert: SmartScreen → „Weitere Informationen“ → „Trotzdem ausführen“. |
+| **macOS (Apple Silicon)** | [TinyPaws-macos-arm64.zip](https://github.com/DeadlySinFredo/TinyPaws/releases/latest/download/TinyPaws-macos-arm64.zip) | Entpacken, `TinyPaws.app` per Rechtsklick → „Öffnen“ (unsigniert). Lebt im Tray, kein Dock-Symbol. |
 
 Builds entstehen automatisch bei jedem Push (GitHub Actions, Reiter „Actions“ → Artefakte);
 ein Tag `v*` erzeugt ein Release mit allen drei Paketen.
@@ -50,7 +53,7 @@ Format und Regeln: [docs/PET_PACKS.md](docs/PET_PACKS.md).
 
 ## OBS
 
-Einstellungen → „OBS-Browser-Quelle" aktivieren. In OBS: Quelle **Browser**, URL `http://127.0.0.1:8737/`,
+Tray-Menü → **„OBS-Link kopieren“** (schaltet die Quelle bei Bedarf ein). In OBS: Quelle **Browser**, Link einfügen,
 Breite/Höhe = deine Bildschirmauflösung (ohne Taskleiste). Hintergrund ist transparent, alles läuft synchron
 zur Desktop-Katze. Server lauscht nur auf localhost.
 
@@ -62,11 +65,12 @@ Reconnect mit Backoff.
 
 **Echter Hype Train + Follows (Twitch-Login, einmalig einrichten):**
 
-1. <https://dev.twitch.tv/console/apps> → „Anwendung registrieren“: Name z. B. `TinyPaws-<dein Name>`,
+1. <https://dev.twitch.tv/console/apps> → „Anwendung registrieren“ (öffnet TinyPaws auch selbst): Name z. B. `TinyPaws-<dein Name>`,
    OAuth-Redirect `http://localhost`, Kategorie „Other“, Client-Typ **Öffentlich**.
-2. Die angezeigte **Client-ID** in TinyPaws → Einstellungen → „Twitch Client-ID“ eintragen.
-3. Tray-Menü → „Mit Twitch verbinden“: TinyPaws zeigt einen Code und öffnet twitch.tv/activate –
-   dort bestätigen. Kein Passwort geht durch TinyPaws.
+2. Tray-Menü → **„Mit Twitch verbinden“**: beim ersten Mal öffnet sich die Twitch-Entwicklerseite und ein
+   Fenster, in das du die **Client-ID** einfügst. Danach zeigt TinyPaws einen Code und öffnet
+   twitch.tv/activate – dort bestätigen. Kein Passwort geht durch TinyPaws. Der Chat deines Kanals wird
+   automatisch mit verbunden.
 
 Der Zugangsschlüssel liegt danach verschlüsselt im System-Schlüsselbund (Secret Service/KWallet),
 nicht in einer Datei. Dann kommen Hype Train (Start, Level-Up, Ende), Follows, Abos, Geschenk-Abos,

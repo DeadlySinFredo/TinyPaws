@@ -35,7 +35,7 @@ package() {
 #!/bin/sh
 PYTHONPATH=/usr/lib/tinypaws exec python3 -m tinypaws "$@"
 SH
-  install -Dm644 packaging/tinypaws.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/tinypaws.png"
+  install -Dm644 packaging/tinypaws.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/tinypaws.png"
   install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/tinypaws.desktop" <<'DESK'
 [Desktop Entry]
 Type=Application

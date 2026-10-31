@@ -75,7 +75,7 @@ def autostart_file():
 
 def set_autostart(enabled):
     """Start on login: XDG autostart (Linux), HKCU Run key (Windows), LaunchAgent (macOS)."""
-    cmd = launch_cmd()
+    cmd = launch_cmd() + ['--autostart']  # stays in the tray, no start window
     root = str(Path(__file__).resolve().parent.parent)  # source checkout needs it on PYTHONPATH
     if sys.platform == 'win32':
         import winreg
