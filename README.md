@@ -50,7 +50,7 @@ Format und Regeln: [docs/PET_PACKS.md](docs/PET_PACKS.md).
 
 ## OBS
 
-Einstellungen → „OBS-Browser-Quelle" aktivieren. In OBS: Quelle **Browser**, URL `http://127.0.0.1:8737/`,
+Tray-Menü → **„OBS-Link kopieren“** (schaltet die Quelle bei Bedarf ein). In OBS: Quelle **Browser**, Link einfügen,
 Breite/Höhe = deine Bildschirmauflösung (ohne Taskleiste). Hintergrund ist transparent, alles läuft synchron
 zur Desktop-Katze. Server lauscht nur auf localhost.
 
@@ -62,11 +62,12 @@ Reconnect mit Backoff.
 
 **Echter Hype Train + Follows (Twitch-Login, einmalig einrichten):**
 
-1. <https://dev.twitch.tv/console/apps> → „Anwendung registrieren“: Name z. B. `TinyPaws-<dein Name>`,
+1. <https://dev.twitch.tv/console/apps> → „Anwendung registrieren“ (öffnet TinyPaws auch selbst): Name z. B. `TinyPaws-<dein Name>`,
    OAuth-Redirect `http://localhost`, Kategorie „Other“, Client-Typ **Öffentlich**.
-2. Die angezeigte **Client-ID** in TinyPaws → Einstellungen → „Twitch Client-ID“ eintragen.
-3. Tray-Menü → „Mit Twitch verbinden“: TinyPaws zeigt einen Code und öffnet twitch.tv/activate –
-   dort bestätigen. Kein Passwort geht durch TinyPaws.
+2. Tray-Menü → **„Mit Twitch verbinden“**: beim ersten Mal öffnet sich die Twitch-Entwicklerseite und ein
+   Fenster, in das du die **Client-ID** einfügst. Danach zeigt TinyPaws einen Code und öffnet
+   twitch.tv/activate – dort bestätigen. Kein Passwort geht durch TinyPaws. Der Chat deines Kanals wird
+   automatisch mit verbunden.
 
 Der Zugangsschlüssel liegt danach verschlüsselt im System-Schlüsselbund (Secret Service/KWallet),
 nicht in einer Datei. Dann kommen Hype Train (Start, Level-Up, Ende), Follows, Abos, Geschenk-Abos,

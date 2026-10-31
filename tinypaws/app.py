@@ -32,7 +32,11 @@ TR = {
                scenes='Meme-Szenen', memes='Memes', events='Stream-Events (Simulation)', chat='Chat-Simulation',
                actions='Aktionen', obs='OBS-Browser-Quelle', twitch='Twitch-Kanal (nur lesen)', climb='Fenster hochklettern (KDE)',
                climbnow='Fenster klettern', clientid='Twitch Client-ID (Hype Train, Follows)',
-               tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden',
+               tw_login='Mit Twitch verbinden', tw_logout='Twitch abmelden', obs_copy='OBS-Link kopieren',
+               obs_copied='OBS-Link kopiert: {url}\nIn OBS: Quelle „Browser“ → URL einfügen, Breite {w}, Höhe {h}.',
+               tw_setup='Twitch einrichten (einmalig)',
+               tw_setup_text='Twitch verlangt eine eigene, kostenlose App-ID. Einmalig:\n\n1. Die Seite dev.twitch.tv öffnet sich – mit deinem Twitch-Konto anmelden.\n2. „Anwendung registrieren“: Name z. B. TinyPaws-DeinName\n   OAuth-Redirect-URL: http://localhost\n   Kategorie: Other   ·   Client-Typ: Öffentlich\n3. Die angezeigte Client-ID hier einfügen und OK drücken.\n\nDanach zeigt TinyPaws einen Code zum Bestätigen auf twitch.tv.',
+               tw_bad_id='Das sieht nicht wie eine Twitch-Client-ID aus.', tw_connected='Twitch verbunden als {0}.',
                tw_code='Öffne {url} und gib diesen Code ein:', pack_import='Tierpaket importieren…',
                pack_export='Tier als Vorlage exportieren…',
                pack_ok='Paket „{0}“ installiert. Auswahl unter „Tier wählen“.', choose='Tier wählen'),
@@ -47,7 +51,11 @@ TR = {
                scenes='Meme scenes', memes='Memes', events='Stream events (simulated)', chat='Chat simulation',
                actions='Actions', obs='OBS browser source', twitch='Twitch channel (read-only)', climb='Climb windows (KDE)',
                climbnow='Climb window', clientid='Twitch Client ID (Hype Train, follows)',
-               tw_login='Connect Twitch', tw_logout='Disconnect Twitch',
+               tw_login='Connect Twitch', tw_logout='Disconnect Twitch', obs_copy='Copy OBS link',
+               obs_copied='OBS link copied: {url}\nIn OBS: add a “Browser” source, paste the URL, width {w}, height {h}.',
+               tw_setup='Set up Twitch (once)',
+               tw_setup_text='Twitch requires your own free app ID. Once:\n\n1. dev.twitch.tv opens – log in with your Twitch account.\n2. “Register your application”: name e.g. TinyPaws-YourName\n   OAuth redirect URL: http://localhost\n   Category: Other   ·   Client type: Public\n3. Paste the Client ID shown there and press OK.\n\nTinyPaws then shows a code to confirm on twitch.tv.',
+               tw_bad_id='That does not look like a Twitch Client ID.', tw_connected='Twitch connected as {0}.',
                tw_code='Open {url} and enter this code:', pack_import='Import pet pack…',
                pack_export='Export pet as template…',
                pack_ok='Pack “{0}” installed. Pick it under “Choose pet”.', choose='Choose pet'),
@@ -409,10 +417,7 @@ class TinyPaws:
             self.kwin = kwin.KWinWindows(settings.config_dir() / 'kwin_windows.js')
         self.es, self.es_state = None, ''
         if valid_client_id(cfg['twitch_client_id']):
-            self.es = TwitchEventSub(cfg['twitch_client_id'])
-            self.es.code.connect(self.show_code)
-            self.es.status.connect(self.es_status)
-            self.es.start()
+            self._start_eventsub(cfg['twitch_client_id'])
         self.twitch = None
         if valid_channel(cfg['twitch_channel']):
             self.twitch = TwitchChat(cfg['twitch_channel'])
@@ -438,9 +443,9 @@ class TinyPaws:
         self.interact_act.setCheckable(True)
         self.interact_act.setChecked(self.cfg['interact'])
         self.interact_act.toggled.connect(self.set_interact)
-        if self.es:
-            m.addAction(self.t('tw_login'), self.es.login)
-            m.addAction(self.t('tw_logout'), self.es.logout)
+        m.addAction(self.t('obs_copy'), self.copy_obs_link)
+        m.addAction(self.t('tw_login'), self.twitch_connect)
+        m.addAction(self.t('tw_logout'), lambda: self.es and self.es.logout())
         m.addAction(self.t('pack_import'), self.import_pack)
         m.addAction(self.t('pack_export'), self.export_pack)
         m.addAction(self.t('settings'), self.open_settings)
@@ -644,11 +649,68 @@ class TinyPaws:
         d.show()
         QDesktopServices.openUrl(QUrl(url))
 
+    def _start_eventsub(self, cid):
+        self.es = TwitchEventSub(cid)
+        self.es.code.connect(self.show_code)
+        self.es.status.connect(self.es_status)
+        self.es.start()
+
+    def twitch_connect(self):
+        """One click: first time a short setup for the Client ID, then the device-code login."""
+        if self.es:
+            self.es.login()
+            return
+        d = QDialog()
+        d.setWindowTitle('TinyPaws – ' + self.t('tw_setup'))
+        v = QVBoxLayout(d)
+        v.addWidget(QLabel(self.t('tw_setup_text')))
+        edit = QLineEdit()
+        edit.setPlaceholderText('Client-ID')
+        v.addWidget(edit)
+        bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        bb.accepted.connect(d.accept)
+        bb.rejected.connect(d.reject)
+        v.addWidget(bb)
+        QDesktopServices.openUrl(QUrl('https://dev.twitch.tv/console/apps/create'))
+        while d.exec():
+            cid = edit.text().strip().lower()
+            if valid_client_id(cid):
+                self.cfg['twitch_client_id'] = cid
+                settings.save(self.cfg)
+                self._start_eventsub(cid)
+                self.es.login()
+                return
+            QMessageBox.warning(None, 'TinyPaws', self.t('tw_bad_id'))
+
     def es_status(self, text):
         self.es_state = text
         self.tray.setToolTip('TinyPaws – %s\nTwitch: %s' % (self.cfg['name'], text))
-        if text.startswith('verbunden') and getattr(self, 'code_dialog', None):
+        if not text.startswith('verbunden'):
+            return
+        if getattr(self, 'code_dialog', None):
             self.code_dialog.close()
+            self.code_dialog = None
+            self.tray.showMessage('TinyPaws', self.t('tw_connected').format(self.es.user_login))
+        login = (self.es.user_login or '').lower()
+        if not self.twitch and valid_channel(login):  # also react to your own channel's chat
+            self.cfg['twitch_channel'] = login
+            settings.save(self.cfg)
+            self.twitch = TwitchChat(login)
+
+    def copy_obs_link(self):
+        if not self.obs:  # switch the browser source on if it was off
+            try:
+                self.obs = ObsServer(self.cfg['obs_port'], self.cfg['fps'], self.skin)
+                self.cfg['obs'] = True
+                settings.save(self.cfg)
+            except OSError as e:
+                QMessageBox.warning(None, 'TinyPaws', 'OBS: %s' % e)
+                return
+        url = 'http://127.0.0.1:%d/' % self.obs.port
+        QGuiApplication.clipboard().setText(url)
+        msg = self.t('obs_copied').format(url=url, w=self.geo.width(), h=self.geo.height())
+        self.tray.showMessage('TinyPaws', msg)
+        self.pet.say('OBS ✓', 2.0)
 
     # ---------------------------------------------------------------- windows
     def show_panel(self):
