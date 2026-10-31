@@ -5,8 +5,9 @@ import re
 import sys
 from pathlib import Path
 
+MAX_COMPANIONS = 3  # plus the main pet: keeps CPU/RAM bounded
 DEFAULTS = dict(name='Mochi', animal='cat', breed='', pack='', scale=6, fps=30, random_level=1.0, lang='de',
-                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', twitch_client_id='', climb=True, roam=False, first_run_done=False)
+                autostart=False, screen=0, x=None, poems=True, interact=True, obs=False, obs_port=8737, twitch_channel='', twitch_client_id='', climb=True, roam=False, companions=(), first_run_done=False)
 
 
 def config_dir():
@@ -44,6 +45,9 @@ def load(path=None):
             cfg[k] = DEFAULTS[k]
     cfg['name'] = str(cfg['name'])[:24] or DEFAULTS['name']
     cfg['pack'] = cfg['pack'] if isinstance(cfg['pack'], str) and re.match(r'^[a-z0-9-]{0,32}$', cfg['pack']) else ''
+    comps = cfg['companions'] if isinstance(cfg['companions'], (list, tuple)) else []
+    cfg['companions'] = [dict(key=str(c['key'])[:60], enabled=bool(c.get('enabled', True))) for c in comps[:MAX_COMPANIONS]
+                         if isinstance(c, dict) and re.match(r'^[a-z]+/[a-z0-9-]+$', str(c.get('key', '')))]
     cfg['twitch_client_id'] = str(cfg['twitch_client_id']).strip().lower()
     if not re.match(r'^[a-z0-9]{20,40}$', cfg['twitch_client_id']):
         cfg['twitch_client_id'] = ''

@@ -126,12 +126,17 @@ class ObsServer:
         self.port = self.httpd.server_address[1]
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
-    def set_skin(self, skin):
-        """Swap the served sprite set (pet switch) without dropping connected pages."""
-        # only props + the active pet's frames: all species/breeds would be ~9 MB
+    def set_skin(self, skins):
+        """Swap the served sprite set (pet switch, companions) without dropping connected pages.
+
+        skins: one sprite prefix or a list of them (main pet + companions).
+        """
+        skins = [skins] if isinstance(skins, str) else list(skins)
+        named = tuple(k for k in skins if k)
+        # only props + the active pets' frames: all species/breeds would be ~9 MB
         # prefixed keys belong to a pet skin (incl. HD in-between frames); unprefixed ones are props or the base cat
         sprites = {k: v for k, v in SPRITES.items()
-                   if ((bool(skin) and k.startswith(skin)) if ':' in k else not skin or k not in FRAMES)}
+                   if ((bool(named) and k.startswith(named)) if ':' in k else '' in skins or k not in FRAMES)}
         # visiting animals (meme 'visitor') are base breeds walking in: ship their idle + walk frames too
         for sp in BREEDS:
             pre = skin_of(sp, next(iter(BREEDS[sp])))
