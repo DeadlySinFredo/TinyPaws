@@ -20,6 +20,17 @@ class HDSprites(unittest.TestCase):
                 self.assertEqual(sprites.DENSITY[pre + 'walk31'], 6)
                 self.assertEqual(SIZES[pre + 'idle'], (20, 20))
 
+    def test_walk_cycle_frames_are_the_sheet_frames_in_order(self):
+        """Regression: aliases must never overwrite real cycle frames (walk1/walk2 jumped poses)."""
+        import json
+        from PySide6.QtGui import QImage
+        d = packs.ASSETS / 'fox' / 'arctic'
+        man, sheet = packs.validate(json.loads((d / 'manifest.json').read_text()), QImage(str(d / 'sheet.png')))
+        cut, _, _ = packs.to_frames(man, sheet)
+        rows = lambda c: packs.to_frames(dict(man, frames={'idle': [c], 'stand': [c], 'walk': [c]}), sheet)[0]['idle']  # noqa: E731
+        for i, c in enumerate(man['frames']['walk'][:4]):
+            self.assertEqual(cut['walk%d' % i], rows(c), i)
+
     def test_same_speed_more_frames(self):
         """A full walk cycle still takes the same time; HD just has twice the steps in it."""
         packs.load_builtin_hd('cat', 'tuxedo')

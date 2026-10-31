@@ -557,7 +557,6 @@ def frames(sp='cat'):
         for style in ('walk', 'run', 'sneak'):
             for i in range(GAITS[style][0]):
                 f['%s%d' % (style, i)] = stand(style, i, sp=sp)
-    f['walk1'], f['walk2'] = f['walk4'], f['walk12']  # legacy two-frame names (emotes, reactions.json)
     if sp == 'dog':
         f = {k: [r.translate(_DOG) for r in v] for k, v in f.items()}
     return f

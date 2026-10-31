@@ -193,8 +193,6 @@ def to_frames(manifest, sheet):
         n = counts[anim] = max(n, len(cells))
         for i in range(n):
             cut['%s%d' % (anim, i)] = grid(cells[i * len(cells) // n])
-    w = counts['walk']
-    cut['walk1'], cut['walk2'] = cut['walk%d' % (w // 4)], cut['walk%d' % (3 * w // 4)]  # legacy names
     return cut, list(colors), counts
 
 
