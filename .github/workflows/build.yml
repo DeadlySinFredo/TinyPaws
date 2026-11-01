@@ -108,7 +108,8 @@ jobs:
           echo "macOS build and tests run only for release tags or a manual workflow run with **macos** ticked." >> "$GITHUB_STEP_SUMMARY"
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Linux + Windows must pass; macOS joins when GitHub-hosted Mac runners are available, but never blocks
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.build.result == 'success'
     needs: [build, macos]
     runs-on: [self-hosted, linux, x64, tinypaws]
     permissions:

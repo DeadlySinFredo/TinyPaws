@@ -1,4 +1,4 @@
-# Entwicklungsstand (v0.3.0 + Arbeit an #3, Stand 2026-10-31)
+# Entwicklungsstand (v0.4.0, Stand 2026-11-01)
 
 Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am echten Desktop geprüft ·
 **Test** = nur automatisiert/offscreen geprüft · **offen** = nicht abgenommen.
@@ -36,6 +36,7 @@ Legende: **live** = auf CachyOS/KDE Plasma 6 (Wayland, App über XWayland) am ec
 |---|---|
 | Linux/Windows/macOS-Pakete per GitHub Actions, Tests laufen auf allen drei | CI grün |
 | Release v0.3.0 mit allen drei Paketen | veröffentlicht (Repo privat) |
+| Release v0.4.0 | Linux + Windows über Heim-Runner; macOS nur, wenn GitHub-Mac-Runner verfügbar |
 | Arch/CachyOS-PKGBUILD | lokal gebaut |
 | Windows-/macOS-Pakete auf echter Hardware | **offen** (Overlay, Klickdurchlass, Tray, Autostart, DPI) |
 
