@@ -1,4 +1,4 @@
-"""Settings apply live (issue #3, P1): no process restart, every change takes effect."""
+"""Settings apply live: no process restart, every change takes effect."""
 import json
 import os
 import tempfile

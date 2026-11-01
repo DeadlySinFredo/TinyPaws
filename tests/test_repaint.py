@@ -1,4 +1,4 @@
-"""Partial repaints (issue #3 performance) must be pixel-identical to full repaints: no ghost trails."""
+"""Partial repaints must be pixel-identical to full repaints: no ghost trails."""
 import os
 import random
 import unittest

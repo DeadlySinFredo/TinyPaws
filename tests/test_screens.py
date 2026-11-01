@@ -1,4 +1,4 @@
-"""Multi-monitor (issue #3): neighbour detection + pets wandering across simulated screens."""
+"""Multi-monitor: neighbour detection + pets wandering across simulated screens."""
 import json
 import os
 import subprocess
@@ -131,7 +131,7 @@ print('RESULT' + json.dumps(out))
 
 
 class Adapt(unittest.TestCase):
-    """#17: correct size, floor, crispness and hitbox on every monitor, live switching, auto size."""
+    """Correct size, floor, crispness and hitbox on every monitor, live switching, auto size."""
 
     def test_switch_monitors_dpi_and_auto_size(self):
         with tempfile.TemporaryDirectory() as d:

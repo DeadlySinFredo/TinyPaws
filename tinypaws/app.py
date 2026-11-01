@@ -1185,7 +1185,7 @@ class TinyPaws:
         s = self.scale = self._eff_scale(scr)
         p = self.pet
         # associate the windows with the target monitor first: otherwise Qt keeps them on the old
-        # screen (old size limits / device pixel ratio) and the overlay ends up too small (#17)
+        # screen (old size limits / device pixel ratio) and the overlay ends up too small
         self.overlay.setScreen(scr)
         self.handle.setScreen(scr)
         for c in self.companions:

@@ -1,4 +1,4 @@
-"""Token storage (issue #3): OS credential store per platform; login lifecycle without network."""
+"""Token storage: OS credential store per platform; login lifecycle without network."""
 import os
 import sys
 import unittest

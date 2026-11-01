@@ -1,4 +1,4 @@
-"""Several pets at once (issue #3): social behaviour, management, OBS sprites, limits."""
+"""Several pets at once: social behaviour, management, OBS sprites, limits."""
 import json
 import os
 import random

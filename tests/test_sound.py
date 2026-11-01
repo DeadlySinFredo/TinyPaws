@@ -1,4 +1,4 @@
-"""Optional sound (issue #3): own synthesised sounds, off by default, polite, fully switchable."""
+"""Optional sound: own synthesised sounds, off by default, polite, fully switchable."""
 import os
 import random
 import struct

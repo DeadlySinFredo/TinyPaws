@@ -1,4 +1,4 @@
-"""Measure TinyPaws CPU/RAM on the real desktop: idle, sleeping, walking (issue #3 performance).
+"""Measure TinyPaws CPU/RAM on the real desktop: idle, sleeping, walking.
 
 usage: python scripts/measure_perf.py [seconds-per-phase]   (stop the normal TinyPaws first)
 Prints CPU % of one core and RSS per phase, plus repaints/s and repainted area.

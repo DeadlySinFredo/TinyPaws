@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
 
 class PetSwitch(unittest.TestCase):
-    """P0 (issue #3): switching pets must never leave an open OBS page with a mismatched sprite set."""
+    """Switching pets must never leave an open OBS page with a mismatched sprite set."""
 
     def setUp(self):
         from tinypaws import packs

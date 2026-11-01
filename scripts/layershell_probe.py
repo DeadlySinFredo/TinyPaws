@@ -1,4 +1,4 @@
-"""Wayland layer-shell feasibility probe (issue #3). KDE/wlroots only, needs layer-shell-qt.
+"""Wayland layer-shell feasibility probe. KDE/wlroots only, needs layer-shell-qt.
 
 Shows a red square as a layer-shell overlay surface plus an ordinary label window, then takes a
 screenshot to <dir>/shot.png. Finding: the shell integration is process-wide, so the label also
